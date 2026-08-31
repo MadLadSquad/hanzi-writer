@@ -62,6 +62,11 @@ const opts: any = {
 
   drawingFadeDuration: 300,
   drawingWidth: 4,
+  variableDrawingWidth: false,
+  drawingPressureSensitivity: 1,
+  drawingSpeedSensitivity: 0.5,
+  minDrawingWidthScale: 0.5,
+  maxDrawingWidthScale: 1.5,
   strokeWidth: 2,
   outlineWidth: 2,
 };
@@ -236,6 +241,51 @@ describe('Quiz', () => {
         { x: 15, y: 25 },
       ]);
       expect(quiz._userStroke!.points).toEqual([{ x: 15, y: 25 }]);
+    });
+
+    it('gives the stroke a width scale per point if variableDrawingWidth is set', async () => {
+      const renderState = createRenderState();
+      const quiz = new Quiz(
+        char,
+        renderState,
+        new Positioner({ padding: 20, width: 200, height: 200 }),
+      );
+      quiz.startQuiz(Object.assign({}, opts, { variableDrawingWidth: true }));
+
+      await resolvePromises();
+
+      quiz.startUserStroke({ x: 10, y: 20 }, 0.8);
+      quiz.continueUserStroke({ x: 30, y: 40 }, 0.2);
+      await resolvePromises();
+
+      const userStrokeId = quiz._userStroke!.id;
+      const { points, widthScales } = renderState.state.userStrokes![userStrokeId]!;
+      expect(widthScales!.length).toBe(points.length);
+      // the lighter touch draws a thinner line
+      expect(widthScales![1]).toBeLessThan(widthScales![0]);
+      // the render state must not share the stroke's own array of width scales
+      expect(widthScales).not.toBe(quiz._userStroke!.widthScales);
+      expect(widthScales).toEqual(quiz._userStroke!.widthScales);
+    });
+
+    it('leaves width scales off the stroke by default', async () => {
+      const renderState = createRenderState();
+      const quiz = new Quiz(
+        char,
+        renderState,
+        new Positioner({ padding: 20, width: 200, height: 200 }),
+      );
+      quiz.startQuiz(Object.assign({}, opts));
+
+      await resolvePromises();
+
+      quiz.startUserStroke({ x: 10, y: 20 });
+      quiz.continueUserStroke({ x: 30, y: 40 });
+      await resolvePromises();
+
+      const userStrokeId = quiz._userStroke!.id;
+      expect(quiz._userStroke!.widthScales).toBe(null);
+      expect(renderState.state.userStrokes![userStrokeId]!.widthScales).toBeUndefined();
     });
 
     it('ends the current user stroke if one exists', async () => {

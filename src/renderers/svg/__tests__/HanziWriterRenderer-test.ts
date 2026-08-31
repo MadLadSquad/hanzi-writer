@@ -5,6 +5,7 @@ import { copyAndMergeDeep } from '../../../utils';
 import Positioner from '../../../Positioner';
 import parseCharData from '../../../parseCharData';
 import { RenderStateObject } from '../../../RenderState';
+import { getPathString, getVariableWidthOutline } from '../../../geometry';
 
 const char = parseCharData('人', ren);
 const positioner = new Positioner({
@@ -79,5 +80,70 @@ describe('HanziWriterRenderer', () => {
     renderer.render(props2);
     expect(Object.keys(renderer._userStrokeRenderers)).toEqual([]);
     expect(document.querySelectorAll('svg > g > path').length).toBe(0);
+  });
+
+  it('fills an outline around the points for user strokes with a variable width', () => {
+    const charProps = {
+      opacity: 0.7,
+      strokes: {
+        0: {
+          opacity: 1,
+          displayPortion: 1,
+        },
+        1: {
+          opacity: 1,
+          displayPortion: 1,
+        },
+      },
+    };
+
+    const props: RenderStateObject = {
+      options: {
+        drawingWidth: 4,
+        drawingColor: { r: 255, g: 255, b: 0, a: 0.1 },
+        highlightColor: { r: 255, g: 255, b: 255, a: 1 },
+        strokeColor: { r: 255, g: 255, b: 255, a: 1 },
+        radicalColor: { r: 255, g: 255, b: 255, a: 1 },
+        outlineColor: { r: 255, g: 255, b: 255, a: 1 },
+        drawingFadeDuration: 400,
+      },
+      character: {
+        outline: charProps,
+        main: charProps,
+        highlight: charProps,
+      },
+      userStrokes: {
+        17: {
+          points: [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+          ],
+          widthScales: [0.5, 1],
+          opacity: 0.9,
+        },
+      },
+    };
+
+    const renderer = new HanziWriterRenderer(char, positioner);
+    renderer.mount(target);
+    renderer.render(props);
+
+    const userStrokes = document.querySelectorAll('svg > g > path');
+    expect(userStrokes.length).toBe(1);
+    expect(userStrokes[0].getAttribute('fill')).toBe('rgba(255,255,0,0.1)');
+    expect(userStrokes[0].getAttribute('stroke')).toBe('none');
+    // 1 unit wide where it starts and 2 units wide where it ends, drawingWidth being 4
+    expect(userStrokes[0].getAttribute('d')).toBe(
+      getPathString(
+        getVariableWidthOutline(
+          [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+          ],
+          [2, 4],
+        ),
+        true,
+      ),
+    );
   });
 });

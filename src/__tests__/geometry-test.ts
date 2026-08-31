@@ -1,4 +1,5 @@
 import * as geometry from '../geometry';
+import { Point } from '../typings/types';
 
 describe('geometry', () => {
   describe('_extendPointOnLine', () => {
@@ -201,6 +202,100 @@ describe('geometry', () => {
         { x: 5.4456, y: 2 },
       ];
       expect(geometry.getPathString(points, true)).toEqual('M 0.1 1 L 5.5 0.9 L 5.4 2Z');
+    });
+  });
+
+  describe('getVariableWidthOutline', () => {
+    const expectPointsCloseTo = (actual: Point[], expected: Point[]) => {
+      expect(actual.length).toBe(expected.length);
+      actual.forEach((point, i) => {
+        expect(point.x).toBeCloseTo(expected[i].x);
+        expect(point.y).toBeCloseTo(expected[i].y);
+      });
+    };
+
+    it('outlines a line which is the requested width at each point', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ];
+      // down one side, around the end cap, back up the other side, around the start cap
+      expectPointsCloseTo(geometry.getVariableWidthOutline(points, [2, 4], 2), [
+        { x: 0, y: 1 },
+        { x: 10, y: 2 },
+        { x: 12, y: 0 },
+        { x: 10, y: -2 },
+        { x: 0, y: -1 },
+        { x: -1, y: 0 },
+      ]);
+    });
+
+    it('offsets each point perpendicular to the line through it', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 0, y: 10 },
+      ];
+      expectPointsCloseTo(geometry.getVariableWidthOutline(points, [2, 2], 2), [
+        { x: -1, y: 0 },
+        { x: -1, y: 10 },
+        { x: 0, y: 11 },
+        { x: 1, y: 10 },
+        { x: 1, y: 0 },
+        { x: 0, y: -1 },
+      ]);
+    });
+
+    it('widens the outline at corners so the line stays the requested width', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: 10 },
+      ];
+      const outline = geometry.getVariableWidthOutline(points, [2, 2, 2], 2);
+      // the outside of the corner sits further than half the width from it
+      expect(geometry.distance(outline[1], points[1])).toBeCloseTo(Math.sqrt(2));
+    });
+
+    it('draws a dot when there is only one point', () => {
+      const outline = geometry.getVariableWidthOutline([{ x: 3, y: 4 }], [6], 4);
+      expect(outline.length).toBe(8);
+      outline.forEach((point) => {
+        expect(geometry.distance(point, { x: 3, y: 4 })).toBeCloseTo(3);
+      });
+    });
+
+    it('merges repeated points, which have no direction to offset along', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ];
+      expectPointsCloseTo(
+        geometry.getVariableWidthOutline(points, [1, 2, 4], 2),
+        geometry.getVariableWidthOutline(
+          [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+          ],
+          [2, 4],
+          2,
+        ),
+      );
+    });
+
+    it('falls back to the last width if fewer widths than points are given', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 },
+      ];
+      expectPointsCloseTo(
+        geometry.getVariableWidthOutline(points, [2], 2),
+        geometry.getVariableWidthOutline(points, [2, 2], 2),
+      );
+    });
+
+    it('returns nothing if there are no points', () => {
+      expect(geometry.getVariableWidthOutline([], [])).toEqual([]);
     });
   });
 });

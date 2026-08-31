@@ -1,6 +1,7 @@
 import * as svg from './svgUtils';
-import { getPathString } from '../../geometry';
+import { getPathString, getVariableWidthOutline } from '../../geometry';
 import { ColorObject, Point } from '../../typings/types';
+import { getStrokeWidths } from '../../userStrokeWidth';
 import SVGRenderTarget from './RenderTarget';
 
 export type UserStrokeProps = {
@@ -8,6 +9,20 @@ export type UserStrokeProps = {
   strokeColor: ColorObject;
   opacity: number;
   points: Point[];
+  /** Multiplier to apply to `strokeWidth` at each point, if the stroke has a variable width */
+  widthScales?: number[];
+};
+
+const hasVariableWidth = (props?: UserStrokeProps) => !!props?.widthScales?.length;
+
+const getUserStrokePathString = (props: UserStrokeProps) => {
+  const widths = getStrokeWidths(props.strokeWidth, props.widthScales);
+  if (!widths) {
+    return getPathString(props.points);
+  }
+  // a stroked path is the same width from end to end, so a variable-width line has to be
+  // drawn as a filled outline around the points instead
+  return getPathString(getVariableWidthOutline(props.points, widths), true);
 };
 
 export default class UserStrokeRenderer {
@@ -23,24 +38,36 @@ export default class UserStrokeRenderer {
     if (!this._path || props === this._oldProps) {
       return;
     }
+    const isVariableWidth = hasVariableWidth(props);
     if (
       props.strokeColor !== this._oldProps?.strokeColor ||
-      props.strokeWidth !== this._oldProps?.strokeWidth
+      props.strokeWidth !== this._oldProps?.strokeWidth ||
+      isVariableWidth !== hasVariableWidth(this._oldProps)
     ) {
       const { r, g, b, a } = props.strokeColor;
-      svg.attrs(this._path, {
-        fill: 'none',
-        stroke: `rgba(${r},${g},${b},${a})`,
-        'stroke-width': props.strokeWidth.toString(),
-        'stroke-linecap': 'round',
-        'stroke-linejoin': 'round',
-      });
+      const color = `rgba(${r},${g},${b},${a})`;
+      svg.attrs(
+        this._path,
+        isVariableWidth
+          ? { fill: color, stroke: 'none' }
+          : {
+              fill: 'none',
+              stroke: color,
+              'stroke-width': props.strokeWidth.toString(),
+              'stroke-linecap': 'round',
+              'stroke-linejoin': 'round',
+            },
+      );
     }
     if (props.opacity !== this._oldProps?.opacity) {
       svg.attr(this._path, 'opacity', props.opacity.toString());
     }
-    if (props.points !== this._oldProps?.points) {
-      svg.attr(this._path, 'd', getPathString(props.points));
+    if (
+      props.points !== this._oldProps?.points ||
+      props.widthScales !== this._oldProps?.widthScales ||
+      props.strokeWidth !== this._oldProps?.strokeWidth
+    ) {
+      svg.attr(this._path, 'd', getUserStrokePathString(props));
     }
     this._oldProps = props;
   }

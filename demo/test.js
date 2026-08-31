@@ -20,6 +20,8 @@ function updateCharacter() {
     onCorrectStroke: printStrokePoints,
     onMistake: printStrokePoints,
     showCharacter: false,
+    // vary the width of quiz strokes based on stylus pressure and drawing speed
+    variableDrawingWidth: document.querySelector('.js-variable-width').checked,
   });
   isCharVisible = true;
   isOutlineVisible = true;
@@ -39,6 +41,9 @@ window.onload = function () {
     updateCharacter();
   });
 
+  document.querySelector('.js-variable-width').addEventListener('change', function () {
+    updateCharacter();
+  });
   document.querySelector('.js-toggle').addEventListener('click', function () {
     isCharVisible ? writer.hideCharacter() : writer.showCharacter();
     isCharVisible = !isCharVisible;

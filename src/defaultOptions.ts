@@ -47,6 +47,11 @@ const defaultOptions: HanziWriterOptions = {
 
   drawingFadeDuration: 300,
   drawingWidth: 4,
+  variableDrawingWidth: false,
+  drawingPressureSensitivity: 1,
+  drawingSpeedSensitivity: 0.5,
+  minDrawingWidthScale: 0.5,
+  maxDrawingWidthScale: 1.5,
   strokeWidth: 2,
   outlineWidth: 2,
   rendererOverride: {},

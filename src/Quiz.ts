@@ -6,7 +6,12 @@ import * as quizActions from './quizActions';
 import * as geometry from './geometry';
 import * as characterActions from './characterActions';
 import Character from './models/Character';
-import { ParsedHanziWriterOptions, Point, StrokeData } from './typings/types';
+import {
+  DrawingWidthOptions,
+  ParsedHanziWriterOptions,
+  Point,
+  StrokeData,
+} from './typings/types';
 import RenderState from './RenderState';
 import { GenericMutation } from './Mutation';
 
@@ -38,11 +43,9 @@ export default class Quiz {
 
   startQuiz(options: ParsedHanziWriterOptions) {
     if (this._userStrokesIds) {
-      this._renderState.run(
-        quizActions.removeAllUserStrokes( this._userStrokesIds ),
-      );
+      this._renderState.run(quizActions.removeAllUserStrokes(this._userStrokesIds));
     }
-    this._userStrokesIds = []
+    this._userStrokesIds = [];
 
     this._isActive = true;
     this._options = options;
@@ -63,7 +66,7 @@ export default class Quiz {
     );
   }
 
-  startUserStroke(externalPoint: Point) {
+  startUserStroke(externalPoint: Point, pressure?: number) {
     if (!this._isActive) {
       return null;
     }
@@ -72,21 +75,61 @@ export default class Quiz {
     }
     const point = this._positioner.convertExternalPoint(externalPoint);
     const strokeId = counter();
-    this._userStroke = new UserStroke(strokeId, point, externalPoint);
-    this._userStrokesIds?.push(strokeId)
-    return this._renderState.run(quizActions.startUserStroke(strokeId, point));
+    this._userStroke = new UserStroke(strokeId, point, externalPoint, {
+      pressure,
+      widthOptions: this._getDrawingWidthOptions(),
+    });
+    this._userStrokesIds?.push(strokeId);
+    return this._renderState.run(
+      quizActions.startUserStroke(
+        strokeId,
+        point,
+        this._copyWidthScales(this._userStroke),
+      ),
+    );
   }
 
-  continueUserStroke(externalPoint: Point) {
+  continueUserStroke(externalPoint: Point, pressure?: number) {
     if (!this._userStroke) {
       return Promise.resolve();
     }
     const point = this._positioner.convertExternalPoint(externalPoint);
-    this._userStroke.appendPoint(point, externalPoint);
+    this._userStroke.appendPoint(point, externalPoint, { pressure });
     const nextPoints = this._userStroke.points.slice(0);
     return this._renderState.run(
-      quizActions.updateUserStroke(this._userStroke.id, nextPoints),
+      quizActions.updateUserStroke(
+        this._userStroke.id,
+        nextPoints,
+        this._copyWidthScales(this._userStroke),
+      ),
     );
+  }
+
+  /**
+   * The width options in use for user-drawn strokes, or null if strokes should be drawn at a
+   * constant width
+   */
+  _getDrawingWidthOptions(): DrawingWidthOptions | null {
+    if (!this._options?.variableDrawingWidth) {
+      return null;
+    }
+    const {
+      drawingPressureSensitivity,
+      drawingSpeedSensitivity,
+      minDrawingWidthScale,
+      maxDrawingWidthScale,
+    } = this._options;
+    return {
+      drawingPressureSensitivity,
+      drawingSpeedSensitivity,
+      minDrawingWidthScale,
+      maxDrawingWidthScale,
+    };
+  }
+
+  /** the render state must never hold onto the stroke's own mutable array of width scales */
+  _copyWidthScales(userStroke: UserStroke) {
+    return userStroke.widthScales ? userStroke.widthScales.slice(0) : null;
   }
 
   setPositioner(positioner: Positioner) {
@@ -162,9 +205,7 @@ export default class Quiz {
   cancel() {
     this._isActive = false;
     if (this._userStrokesIds) {
-      this._renderState.run(
-        quizActions.removeAllUserStrokes( this._userStrokesIds ),
-      );
+      this._renderState.run(quizActions.removeAllUserStrokes(this._userStrokesIds));
     }
   }
 

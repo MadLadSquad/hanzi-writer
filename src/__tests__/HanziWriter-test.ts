@@ -1183,7 +1183,10 @@ describe('HanziWriter', () => {
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
-      expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith({ x: 120, y: 67 });
+      expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith(
+        { x: 120, y: 67 },
+        undefined,
+      );
     });
 
     it('starts a user stroke on touchstart', () => {
@@ -1202,7 +1205,10 @@ describe('HanziWriter', () => {
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
-      expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith({ x: 120, y: 67 });
+      expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith(
+        { x: 120, y: 67 },
+        undefined,
+      );
     });
 
     it('continues a user stroke on mousemove', () => {
@@ -1217,7 +1223,10 @@ describe('HanziWriter', () => {
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.continueUserStroke).toHaveBeenCalledTimes(1);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith({ x: 120, y: 67 });
+      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
+        { x: 120, y: 67 },
+        undefined,
+      );
     });
 
     it('continues a user stroke on touchmove', () => {
@@ -1236,7 +1245,63 @@ describe('HanziWriter', () => {
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.continueUserStroke).toHaveBeenCalledTimes(1);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith({ x: 120, y: 67 });
+      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
+        { x: 120, y: 67 },
+        undefined,
+      );
+    });
+
+    it('passes stylus pressure along from touch events which report it', () => {
+      const evt = new TouchEvent('touchstart', {
+        bubbles: true,
+        cancelable: true,
+        touches: [
+          {
+            clientX: 170,
+            clientY: 127,
+            force: 0.75,
+          },
+        ],
+      } as any);
+      const svg = document.querySelector('#target svg')!;
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.dispatchEvent(evt);
+      expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith({ x: 120, y: 67 }, 0.75);
+    });
+
+    it('passes stylus pressure along from pointer events which report it', () => {
+      const evt = new MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 170,
+        clientY: 127,
+      });
+      // PointerEvent extends MouseEvent, so a pen fires mousemove listeners with pressure set
+      Object.assign(evt, { pressure: 0.25, pointerType: 'pen' });
+      const svg = document.querySelector('#target svg')!;
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.dispatchEvent(evt);
+      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
+        { x: 120, y: 67 },
+        0.25,
+      );
+    });
+
+    it('ignores the pressure a mouse reports, since it carries no information', () => {
+      const evt = new MouseEvent('mousemove', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 170,
+        clientY: 127,
+      });
+      Object.assign(evt, { pressure: 0.5, pointerType: 'mouse' });
+      const svg = document.querySelector('#target svg')!;
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.dispatchEvent(evt);
+      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
+        { x: 120, y: 67 },
+        undefined,
+      );
     });
 
     it('ends a user stroke on mouseup', () => {

@@ -38,6 +38,8 @@ export type RenderStateObject = {
     | {
         points: Point[];
         opacity: number;
+        /** Multiplier to apply to `drawingWidth` at each point, if the stroke has a variable width */
+        widthScales?: number[];
       }
     | undefined
   > | null;

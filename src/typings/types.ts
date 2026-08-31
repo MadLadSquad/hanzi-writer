@@ -86,7 +86,18 @@ export type LoadingManagerOptions = {
   onLoadCharDataError?: null | ((error?: Error | string) => void);
 };
 
-type BaseHanziWriterOptions = {
+export type DrawingWidthOptions = {
+  /** Default: 1. How strongly stylus pressure affects the width of lines drawn by users. 0 disables pressure sensitivity. Only used if `variableDrawingWidth` is `true`. */
+  drawingPressureSensitivity: number;
+  /** Default: 0.5. How strongly drawing speed affects the width of lines drawn by users - the faster the stroke, the thinner the line. 0 disables speed sensitivity. Only used if `variableDrawingWidth` is `true`. */
+  drawingSpeedSensitivity: number;
+  /** Default: 0.5. The thinnest a drawn line may get, as a multiple of `drawingWidth`. Only used if `variableDrawingWidth` is `true`. */
+  minDrawingWidthScale: number;
+  /** Default: 1.5. The thickest a drawn line may get, as a multiple of `drawingWidth`. Only used if `variableDrawingWidth` is `true`. */
+  maxDrawingWidthScale: number;
+};
+
+type BaseHanziWriterOptions = DrawingWidthOptions & {
   showOutline: boolean;
   showCharacter: boolean;
   /** Default: svg */
@@ -109,6 +120,8 @@ type BaseHanziWriterOptions = {
   drawingFadeDuration: number;
   /** Default: 4 */
   drawingWidth: number;
+  /** Default: false. If true, lines drawn by users during quizzing vary in width based on stylus pressure and drawing speed rather than always being `drawingWidth` wide. */
+  variableDrawingWidth: boolean;
   /** Default: 2 */
   strokeWidth: number;
   /** Default: 2 */

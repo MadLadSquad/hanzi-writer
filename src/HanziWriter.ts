@@ -526,13 +526,13 @@ export default class HanziWriter {
     this.target.addPointerStartListener((evt) => {
       if (this._quiz) {
         evt.preventDefault();
-        this._quiz.startUserStroke(evt.getPoint());
+        this._quiz.startUserStroke(evt.getPoint(), evt.getPressure?.());
       }
     });
     this.target.addPointerMoveListener((evt) => {
       if (this._quiz) {
         evt.preventDefault();
-        this._quiz.continueUserStroke(evt.getPoint());
+        this._quiz.continueUserStroke(evt.getPoint(), evt.getPressure?.());
       }
     });
     this.target.addPointerEndListener(() => {

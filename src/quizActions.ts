@@ -32,7 +32,11 @@ export const startQuiz = (
   ];
 };
 
-export const startUserStroke = (id: string | number, point: Point): GenericMutation[] => {
+export const startUserStroke = (
+  id: string | number,
+  point: Point,
+  widthScales: number[] | null = null,
+): GenericMutation[] => {
   return [
     new Mutation('quiz.activeUserStrokeId', id, { force: true }),
     new Mutation(
@@ -40,6 +44,7 @@ export const startUserStroke = (id: string | number, point: Point): GenericMutat
       {
         points: [point],
         opacity: 1,
+        ...(widthScales ? { widthScales } : {}),
       },
       { force: true },
     ),
@@ -49,8 +54,17 @@ export const startUserStroke = (id: string | number, point: Point): GenericMutat
 export const updateUserStroke = (
   userStrokeId: string | number,
   points: Point[],
+  widthScales: number[] | null = null,
 ): GenericMutation[] => {
-  return [new Mutation(`userStrokes.${userStrokeId}.points`, points, { force: true })];
+  // points and widths are updated together in a single mutation so that the stroke is never
+  // rendered with widths that don't line up with its points
+  return [
+    new Mutation(
+      `userStrokes.${userStrokeId}`,
+      { points, ...(widthScales ? { widthScales } : {}) },
+      { force: true },
+    ),
+  ];
 };
 
 export const hideUserStroke = (
@@ -68,9 +82,12 @@ export const hideUserStroke = (
 };
 
 export const removeAllUserStrokes = (userStrokeIds: Array<number>): GenericMutation[] => {
-  return userStrokeIds?.map(userStrokeId =>
-    new Mutation(`userStrokes.${userStrokeId}`, null, { force: true })
-  ) || [];
+  return (
+    userStrokeIds?.map(
+      (userStrokeId) =>
+        new Mutation(`userStrokes.${userStrokeId}`, null, { force: true }),
+    ) || []
+  );
 };
 
 export const highlightCompleteChar = (

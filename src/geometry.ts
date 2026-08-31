@@ -167,12 +167,15 @@ export const normalizeCurve = (curve: Point[]) => {
   return subdivideCurve(scaledCurve);
 };
 
+/** rotate a single vector around the origin by theta radians */
+export const rotateVector = (vect: Point, theta: number) => ({
+  x: Math.cos(theta) * vect.x - Math.sin(theta) * vect.y,
+  y: Math.sin(theta) * vect.x + Math.cos(theta) * vect.y,
+});
+
 // rotate around the origin
 export const rotate = (curve: Point[], theta: number) => {
-  return curve.map((point) => ({
-    x: Math.cos(theta) * point.x - Math.sin(theta) * point.y,
-    y: Math.sin(theta) * point.x + Math.cos(theta) * point.y,
-  }));
+  return curve.map((point) => rotateVector(point, theta));
 };
 
 // remove intermediate points that are on the same line as the points to either side
@@ -220,4 +223,121 @@ export const extendStart = (points: Point[], dist: number) => {
   const extendedPoints = filteredPoints.slice(1);
   extendedPoints.unshift(newStart);
   return extendedPoints;
+};
+
+const add = (p1: Point, p2: Point) => ({ x: p1.x + p2.x, y: p1.y + p2.y });
+
+const scaleVector = (vect: Point, scale: number) => ({
+  x: vect.x * scale,
+  y: vect.y * scale,
+});
+
+const normalizeVector = (vect: Point) => {
+  const mag = magnitude(vect);
+  if (mag === 0) return { x: 0, y: 0 };
+  return { x: vect.x / mag, y: vect.y / mag };
+};
+
+/** the vector perpendicular to `vect`, rotated a quarter turn counter-clockwise */
+const perpendicular = (vect: Point) => ({ x: -vect.y, y: vect.x });
+
+/** number of segments used to draw the round caps at either end of a variable-width stroke */
+const CAP_SEGMENTS = 8;
+
+/**
+ * corners scale the offset of the outline by 1 / cos(angle / 2) so the outline stays the
+ * requested width all the way through the turn. This caps how far that offset can grow,
+ * so that very sharp corners don't shoot off into a spike.
+ */
+const MAX_MITER_SCALE = 2;
+
+/**
+ * points along a half circle centered on `center`, starting at `center + startOffset` and
+ * sweeping clockwise to `center - startOffset`. Both endpoints are excluded, since callers
+ * already have them as part of the outline.
+ */
+const halfCircleArc = (center: Point, startOffset: Point, segments: number) => {
+  const arc: Point[] = [];
+  for (let i = 1; i < segments; i++) {
+    arc.push(add(center, rotateVector(startOffset, (-1 * Math.PI * i) / segments)));
+  }
+  return arc;
+};
+
+const circleOutline = (center: Point, radius: number, segments: number) => {
+  const points: Point[] = [];
+  for (let i = 0; i < segments; i++) {
+    points.push(
+      add(center, rotateVector({ x: radius, y: 0 }, (-2 * Math.PI * i) / segments)),
+    );
+  }
+  return points;
+};
+
+/**
+ * Build a closed outline around `points` where the line is `widths[i]` wide at `points[i]`,
+ * with round caps at either end. Filling this outline draws a line whose width varies along
+ * its length, which isn't something a plain stroked path can do.
+ */
+export const getVariableWidthOutline = (
+  points: Point[],
+  widths: number[],
+  capSegments = CAP_SEGMENTS,
+): Point[] => {
+  if (points.length === 0) return [];
+
+  // zero-length segments have no direction to offset along, so merge them into a single point
+  const curve: Point[] = [];
+  const halfWidths: number[] = [];
+  points.forEach((point, i) => {
+    const halfWidth = Math.max(widths[i] ?? arrLast(widths) ?? 0, 0) / 2;
+    if (curve.length > 0 && equals(arrLast(curve), point)) {
+      halfWidths[halfWidths.length - 1] = Math.max(arrLast(halfWidths), halfWidth);
+      return;
+    }
+    curve.push(point);
+    halfWidths.push(halfWidth);
+  });
+
+  if (curve.length === 1) {
+    return circleOutline(curve[0], halfWidths[0], 2 * capSegments);
+  }
+
+  const leftSide: Point[] = [];
+  const rightSide: Point[] = [];
+  const offsets: Point[] = [];
+
+  for (let i = 0; i < curve.length; i++) {
+    const inDir = i > 0 ? normalizeVector(subtract(curve[i], curve[i - 1])) : null;
+    const outDir =
+      i < curve.length - 1 ? normalizeVector(subtract(curve[i + 1], curve[i])) : null;
+
+    const direction = (() => {
+      if (!inDir) return outDir!;
+      if (!outDir) return inDir;
+      const bisector = normalizeVector(add(inDir, outDir));
+      // a complete reversal has no meaningful bisector, so just keep going the way we came
+      return magnitude(bisector) === 0 ? inDir : bisector;
+    })();
+
+    const miterScale = inDir
+      ? 1 / Math.max(cosineSimilarity(direction, inDir), 1 / MAX_MITER_SCALE)
+      : 1;
+    const offset = scaleVector(
+      perpendicular(direction),
+      halfWidths[i] * (outDir && inDir ? miterScale : 1),
+    );
+
+    offsets.push(offset);
+    leftSide.push(add(curve[i], offset));
+    rightSide.push(subtract(curve[i], offset));
+  }
+
+  const lastIndex = curve.length - 1;
+  return [
+    ...leftSide,
+    ...halfCircleArc(curve[lastIndex], offsets[lastIndex], capSegments),
+    ...rightSide.reverse(),
+    ...halfCircleArc(curve[0], scaleVector(offsets[0], -1), capSegments),
+  ];
 };

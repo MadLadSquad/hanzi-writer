@@ -11,6 +11,18 @@ export const drawPath = (ctx: CanvasRenderingContext2D, points: Point[]) => {
   ctx.stroke();
 };
 
+export const fillPath = (ctx: CanvasRenderingContext2D, points: Point[]) => {
+  if (points.length === 0) return;
+  ctx.beginPath();
+  const [start, ...remainingPoints] = points;
+  ctx.moveTo(start.x, start.y);
+  for (const point of remainingPoints) {
+    ctx.lineTo(point.x, point.y);
+  }
+  ctx.closePath();
+  ctx.fill();
+};
+
 /**
  * Break a path string into a series of canvas path commands
  *
