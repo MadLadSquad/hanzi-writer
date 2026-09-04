@@ -1,7 +1,11 @@
 import { ColorObject, RecursivePartial } from './typings/types';
 
-// hacky way to get around rollup not properly setting `global` to `window` in browser
-const globalObj = typeof window === 'undefined' ? global : window;
+const getGlobal = () => {
+  if (typeof window !== 'undefined') return window;
+  if (typeof globalThis !== 'undefined') return globalThis;
+  return global;
+};
+const globalObj = getGlobal();
 
 export const performanceNow =
   (globalObj.performance && (() => globalObj.performance.now())) || (() => Date.now());
@@ -162,5 +166,4 @@ const ua = globalObj.navigator?.userAgent || '';
 export const isMsBrowser =
   ua.indexOf('MSIE ') > 0 || ua.indexOf('Trident/') > 0 || ua.indexOf('Edge/') > 0;
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
 export const noop = () => {};

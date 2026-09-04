@@ -9,11 +9,8 @@ type BoundEvent = {
 
 /** Generic render target */
 export default class RenderTargetBase<
-  TElement extends
-    | HTMLElement
-    | SVGElement
-    | SVGSVGElement
-    | HTMLCanvasElement = HTMLElement
+  TElement extends HTMLElement | SVGElement | SVGSVGElement | HTMLCanvasElement =
+    HTMLElement,
 > {
   node: TElement;
 

@@ -9,7 +9,7 @@ import { RecursivePartial } from './typings/types';
 
 /** Used by `Mutation` & `Delay` */
 export interface GenericMutation<
-  TRenderStateClass extends GenericRenderStateClass = RenderState
+  TRenderStateClass extends GenericRenderStateClass = RenderState,
 > {
   /** Allows mutations starting with the provided string to be cancelled */
   scope: string;
@@ -80,7 +80,7 @@ type GenericRenderStateClass<T = any> = {
 
 export default class Mutation<
   TRenderStateClass extends GenericRenderStateClass,
-  TRenderStateObj = TRenderStateClass['state']
+  TRenderStateObj = TRenderStateClass['state'],
 > implements GenericMutation<TRenderStateClass> {
   static Delay = Delay;
 
@@ -231,7 +231,7 @@ function isAlreadyAtEnd<T>(
   for (const key in endValues) {
     const endValue = endValues[key];
     const startValue = startValues?.[key];
-    if (endValue >= 0) {
+    if (typeof endValue === 'number' && endValue >= 0) {
       if (endValue !== startValue) {
         return false;
       }

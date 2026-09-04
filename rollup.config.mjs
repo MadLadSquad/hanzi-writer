@@ -1,10 +1,13 @@
-import { terser } from 'rollup-plugin-terser';
-import ts from '@wessberg/rollup-plugin-ts';
+import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
 import babel from '@rollup/plugin-babel';
-import pkg from './package.json';
+import { createRequire } from 'module';
 import license from 'rollup-plugin-license';
 import filesize from 'rollup-plugin-filesize';
+
+const require = createRequire(import.meta.url);
+const pkg = require('./package.json');
+const ts = require('rollup-plugin-ts');
 
 const extensions = ['.js', '.ts'];
 
@@ -41,9 +44,7 @@ export default [
     ],
     plugins: [
       filesize(),
-      ts({
-        transpiler: 'babel',
-      }),
+      ts(),
       resolve({ extensions }),
       babel({
         exclude: 'node_modules/**',

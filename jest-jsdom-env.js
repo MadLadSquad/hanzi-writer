@@ -3,16 +3,16 @@
  * from https://github.com/facebook/jest/issues/5124#issuecomment-352749005
  * */
 
-const JSDOMEnvironment = require('jest-environment-jsdom');
+const { TestEnvironment: JSDOMEnvironment } = require('jest-environment-jsdom');
 
 module.exports = class JSDOMEnvironmentGlobal extends JSDOMEnvironment {
-  constructor(config) {
-    super(config);
+  constructor(config, context) {
+    super(config, context);
 
     this.global.jsdom = this.dom;
   }
 
-  teardown() {
+  async teardown() {
     this.global.jsdom = null;
 
     return super.teardown();

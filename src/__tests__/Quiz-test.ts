@@ -73,7 +73,6 @@ const opts: any = {
 
 const createRenderState = (optOverrides = {}) => {
   const options = Object.assign({}, opts, optOverrides);
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   return new RenderState(char, options, () => {});
 };
 

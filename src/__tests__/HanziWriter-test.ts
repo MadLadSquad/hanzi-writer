@@ -349,7 +349,7 @@ describe('HanziWriter', () => {
       try {
         await writer._withDataPromise;
         // eslint-disable-next-line no-empty
-      } catch (err) {}
+      } catch {}
 
       await expect(writer.getCharacterData()).rejects.toThrow(
         new Error('Failed to load character data. Call setCharacter and try again.'),
@@ -565,8 +565,8 @@ describe('HanziWriter', () => {
       clock.tick(50);
       await resolvePromises();
 
-      const pausedDisplayPortion = writer._renderState!.state.character.main.strokes[1]
-        .displayPortion;
+      const pausedDisplayPortion =
+        writer._renderState!.state.character.main.strokes[1].displayPortion;
       expect(pausedDisplayPortion).toBeGreaterThan(0);
       expect(pausedDisplayPortion).toBeLessThan(1);
       expect(isResolved).toBe(false);
@@ -588,8 +588,8 @@ describe('HanziWriter', () => {
       clock.tick(50);
       await resolvePromises();
 
-      const newDisplayPortion = writer._renderState!.state.character.main.strokes[1]
-        .displayPortion;
+      const newDisplayPortion =
+        writer._renderState!.state.character.main.strokes[1].displayPortion;
       expect(newDisplayPortion).not.toBe(pausedDisplayPortion);
       expect(newDisplayPortion).toBeGreaterThan(0);
       expect(newDisplayPortion).toBeLessThan(1);
@@ -818,10 +818,12 @@ describe('HanziWriter', () => {
     });
   });
 
-  ([
-    { methodLabel: 'Character', stateLabel: 'main' },
-    { methodLabel: 'Outline', stateLabel: 'outline' },
-  ] as const).forEach(({ methodLabel, stateLabel }) => {
+  (
+    [
+      { methodLabel: 'Character', stateLabel: 'main' },
+      { methodLabel: 'Outline', stateLabel: 'outline' },
+    ] as const
+  ).forEach(({ methodLabel, stateLabel }) => {
     const hideMethod = methodLabel === 'Character' ? 'hideCharacter' : 'hideOutline';
     const showMethod = methodLabel === 'Character' ? 'showCharacter' : 'showOutline';
 
@@ -1179,7 +1181,7 @@ describe('HanziWriter', () => {
         clientY: 127,
       });
       const svg = document.querySelector('#target svg')!;
-      svg.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
@@ -1201,7 +1203,7 @@ describe('HanziWriter', () => {
         ],
       } as any);
       const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
@@ -1219,7 +1221,7 @@ describe('HanziWriter', () => {
         clientY: 127,
       });
       const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.continueUserStroke).toHaveBeenCalledTimes(1);
@@ -1241,7 +1243,7 @@ describe('HanziWriter', () => {
         ],
       } as any);
       const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
       const canceled = !svg!.dispatchEvent(evt);
       expect(canceled).toBe(true);
       expect(writer._quiz!.continueUserStroke).toHaveBeenCalledTimes(1);
@@ -1264,7 +1266,7 @@ describe('HanziWriter', () => {
         ],
       } as any);
       const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
       svg!.dispatchEvent(evt);
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith({ x: 120, y: 67 }, 0.75);
     });
@@ -1279,7 +1281,7 @@ describe('HanziWriter', () => {
       // PointerEvent extends MouseEvent, so a pen fires mousemove listeners with pressure set
       Object.assign(evt, { pressure: 0.25, pointerType: 'pen' });
       const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
       svg!.dispatchEvent(evt);
       expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
         { x: 120, y: 67 },
@@ -1296,7 +1298,7 @@ describe('HanziWriter', () => {
       });
       Object.assign(evt, { pressure: 0.5, pointerType: 'mouse' });
       const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 } as any);
+      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
       svg!.dispatchEvent(evt);
       expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
         { x: 120, y: 67 },
@@ -1387,23 +1389,30 @@ describe('HanziWriter', () => {
   });
 
   describe('option defaults', () => {
-    it('works with legacy strokeAnimationDuration and strokeHighlightDuration if present', () => {
+    it('works with legacy strokeAnimationDuration and strokeHighlightDuration if present', async () => {
       const writer = HanziWriter.create('target', '人', {
+        charDataLoader,
         strokeAnimationDuration: 1000,
         strokeHighlightDuration: 250,
       });
       expect(writer._options.strokeAnimationSpeed).toBe(0.5);
       expect(writer._options.strokeHighlightSpeed).toBe(2);
+      await writer._withDataPromise;
     });
 
-    it('sets highlightCompleteColor to highlightColor if not explicitly set', () => {
-      const writer = HanziWriter.create('target', '人', { highlightColor: '#ABC' });
+    it('sets highlightCompleteColor to highlightColor if not explicitly set', async () => {
+      const writer = HanziWriter.create('target', '人', {
+        charDataLoader,
+        highlightColor: '#ABC',
+      });
       expect(writer._options.highlightCompleteColor).toBe('#ABC');
+      await writer._withDataPromise;
     });
 
-    it('sets highlightCompleteColor to the default highilghtColor if none is passed', () => {
-      const writer = HanziWriter.create('target', '人');
+    it('sets highlightCompleteColor to the default highilghtColor if none is passed', async () => {
+      const writer = HanziWriter.create('target', '人', { charDataLoader });
       expect(writer._options.highlightCompleteColor).toBe('#AAF');
+      await writer._withDataPromise;
     });
   });
 });

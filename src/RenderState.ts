@@ -174,9 +174,9 @@ export default class RenderState {
     const mutations = mutationChain._mutations;
     if (mutationChain._index >= mutations.length) {
       if (mutationChain._loop) {
-        mutationChain._index = 0; // eslint-disable-line no-param-reassign
+        mutationChain._index = 0;
       } else {
-        mutationChain._isActive = false; // eslint-disable-line no-param-reassign
+        mutationChain._isActive = false;
         this._mutationChains = this._mutationChains.filter(
           (chain) => chain !== mutationChain,
         );
@@ -190,7 +190,7 @@ export default class RenderState {
 
     activeMutation.run(this).then(() => {
       if (mutationChain._isActive) {
-        mutationChain._index++; // eslint-disable-line no-param-reassign
+        mutationChain._index++;
         this._run(mutationChain);
       }
     });
