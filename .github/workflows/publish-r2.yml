@@ -1,0 +1,62 @@
+name: Publish minified build to Cloudflare R2
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: publish-r2
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  R2_BUCKET: youyin-data
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build
+
+      - name: Verify build output
+        run: |
+          test -f dist/hanzi-writer.min.js
+          test -f dist/hanzi-writer.min.js.map
+          ls -la dist
+
+      - name: Upload to R2 (copy only, no sync)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PACKAGE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PACKAGE_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          # Newer AWS CLI versions send checksum headers by default; only send them when required for R2 compatibility.
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+        run: |
+          aws s3 cp dist/hanzi-writer.min.js "s3://${R2_BUCKET}/hanzi-writer.min.js" \
+            --endpoint-url "${R2_ENDPOINT}" \
+            --content-type "application/javascript; charset=utf-8" \
+            --cache-control "public, max-age=3600"
+
+          aws s3 cp dist/hanzi-writer.min.js.map "s3://${R2_BUCKET}/hanzi-writer.min.js.map" \
+            --endpoint-url "${R2_ENDPOINT}" \
+            --content-type "application/json; charset=utf-8" \
+            --cache-control "public, max-age=3600"
