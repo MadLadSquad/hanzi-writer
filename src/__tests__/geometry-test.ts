@@ -206,62 +206,230 @@ describe('geometry', () => {
   });
 
   describe('getVariableWidthOutline', () => {
-    const expectPointsCloseTo = (actual: Point[], expected: Point[]) => {
-      expect(actual.length).toBe(expected.length);
-      actual.forEach((point, i) => {
-        expect(point.x).toBeCloseTo(expected[i].x);
-        expect(point.y).toBeCloseTo(expected[i].y);
-      });
+    /**
+     * canvas and SVG fill the pieces of the outline together using the nonzero rule, so a
+     * point is filled unless this is 0
+     */
+    const getWindingNumber = (pt: Point, outline: Point[][]) => {
+      let winding = 0;
+      for (const poly of outline) {
+        for (let i = 0; i < poly.length; i++) {
+          const a = poly[i];
+          const b = poly[(i + 1) % poly.length];
+          const cross = (b.x - a.x) * (pt.y - a.y) - (pt.x - a.x) * (b.y - a.y);
+          if (a.y <= pt.y) {
+            if (b.y > pt.y && cross > 0) winding++;
+          } else if (b.y <= pt.y && cross < 0) {
+            winding--;
+          }
+        }
+      }
+      return winding;
     };
+
+    /**
+     * Points on a grid which should be inside the drawn line but aren't filled. Inside means
+     * well within the width of a segment (between its ends), or of a corner between two.
+     */
+    const getUnfilledPoints = (points: Point[], widths: number[]) => {
+      const outline = geometry.getVariableWidthOutline(points, widths);
+      const margin = 0.25;
+      const xs = points.map((p) => p.x);
+      const ys = points.map((p) => p.y);
+      const maxWidth = Math.max(...widths);
+      const unfilled: Point[] = [];
+      for (
+        let x = Math.min(...xs) - maxWidth;
+        x <= Math.max(...xs) + maxWidth;
+        x += 0.5
+      ) {
+        for (
+          let y = Math.min(...ys) - maxWidth;
+          y <= Math.max(...ys) + maxWidth;
+          y += 0.5
+        ) {
+          const pt = { x: x + 0.013, y: y + 0.007 };
+          const isInside = points.some((point, i) => {
+            if (
+              i > 0 &&
+              i < points.length - 1 &&
+              geometry.distance(pt, point) < widths[i] / 2 - margin
+            ) {
+              return true;
+            }
+            const next = points[i + 1];
+            if (!next) return false;
+            const seg = geometry.subtract(next, point);
+            const t =
+              ((pt.x - point.x) * seg.x + (pt.y - point.y) * seg.y) /
+              (seg.x * seg.x + seg.y * seg.y);
+            if (t <= 0 || t >= 1) return false;
+            const foot = { x: point.x + t * seg.x, y: point.y + t * seg.y };
+            const halfWidth = (widths[i] + (widths[i + 1] - widths[i]) * t) / 2;
+            return geometry.distance(pt, foot) < halfWidth - margin;
+          });
+          if (isInside && getWindingNumber(pt, outline) === 0) {
+            unfilled.push(pt);
+          }
+        }
+      }
+      return unfilled;
+    };
+
+    it('leaves no gaps at corners of any angle, even where points are closer together than the line is wide', () => {
+      const failures: string[] = [];
+      for (const segmentLength of [100, 12, 6, 3]) {
+        for (const [startWidth, endWidth] of [
+          [20, 20],
+          [14, 26],
+          [26, 14],
+        ]) {
+          for (let degrees = -175; degrees <= 175; degrees += 5) {
+            const angle = (degrees * Math.PI) / 180;
+            const points = [
+              { x: -segmentLength, y: 0 },
+              { x: 0, y: 0 },
+              { x: segmentLength * Math.cos(angle), y: segmentLength * Math.sin(angle) },
+            ];
+            const unfilled = getUnfilledPoints(points, [startWidth, 20, endWidth]);
+            if (unfilled.length > 0) {
+              failures.push(
+                `length ${segmentLength}, widths ${startWidth}-${endWidth}, turn ${degrees}: ${unfilled.length}`,
+              );
+            }
+          }
+        }
+      }
+      expect(failures).toEqual([]);
+    });
+
+    it('leaves no gaps in a hook drawn with many closely spaced points', () => {
+      const points: Point[] = [];
+      const widths: number[] = [];
+      // down a straight stroke, then tightly around a hook and back up
+      for (let y = 0; y < 60; y += 2) {
+        points.push({ x: 0, y });
+        widths.push(16 + y / 10);
+      }
+      for (let i = 0; i <= 12; i++) {
+        const angle = Math.PI - (i * Math.PI) / 12;
+        points.push({ x: 3 + 3 * Math.cos(angle), y: 60 + 3 * Math.sin(angle) });
+        widths.push(22 - i / 2);
+      }
+      for (let y = 58; y > 40; y -= 2) {
+        points.push({ x: 6, y });
+        widths.push(14);
+      }
+      expect(getUnfilledPoints(points, widths)).toEqual([]);
+    });
 
     it('outlines a line which is the requested width at each point', () => {
       const points = [
         { x: 0, y: 0 },
         { x: 10, y: 0 },
       ];
-      // down one side, around the end cap, back up the other side, around the start cap
-      expectPointsCloseTo(geometry.getVariableWidthOutline(points, [2, 4], 2), [
-        { x: 0, y: 1 },
-        { x: 10, y: 2 },
-        { x: 12, y: 0 },
-        { x: 10, y: -2 },
-        { x: 0, y: -1 },
-        { x: -1, y: 0 },
-      ]);
+      // 2 wide at the start, 4 wide at the end
+      const outline = geometry.getVariableWidthOutline(points, [2, 4]);
+      expect(getWindingNumber({ x: 0, y: 0.95 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: 0, y: 1.05 }, outline)).toBe(0);
+      expect(getWindingNumber({ x: 5, y: -1.45 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: 5, y: -1.6 }, outline)).toBe(0);
+      expect(getWindingNumber({ x: 10, y: 1.95 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: 10, y: 2.05 }, outline)).toBe(0);
+      // with round caps at either end
+      expect(getWindingNumber({ x: -0.95, y: 0 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: -1.05, y: 0 }, outline)).toBe(0);
+      expect(getWindingNumber({ x: 11.95, y: 0 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: 12.05, y: 0 }, outline)).toBe(0);
     });
 
-    it('offsets each point perpendicular to the line through it', () => {
-      const points = [
-        { x: 0, y: 0 },
-        { x: 0, y: 10 },
-      ];
-      expectPointsCloseTo(geometry.getVariableWidthOutline(points, [2, 2], 2), [
-        { x: -1, y: 0 },
-        { x: -1, y: 10 },
-        { x: 0, y: 11 },
-        { x: 1, y: 10 },
-        { x: 1, y: 0 },
-        { x: 0, y: -1 },
-      ]);
-    });
-
-    it('widens the outline at corners so the line stays the requested width', () => {
+    it('winds every piece of the outline the same way, so overlapping pieces never cancel out', () => {
       const points = [
         { x: 0, y: 0 },
         { x: 10, y: 0 },
         { x: 10, y: 10 },
+        { x: 0, y: 1 },
+        { x: 0, y: 30 },
       ];
-      const outline = geometry.getVariableWidthOutline(points, [2, 2, 2], 2);
-      // the outside of the corner sits further than half the width from it
-      expect(geometry.distance(outline[1], points[1])).toBeCloseTo(Math.sqrt(2));
+      const outline = geometry.getVariableWidthOutline(points, [2, 6, 3, 8, 1]);
+      for (const piece of outline) {
+        let signedArea = 0;
+        for (let i = 0; i < piece.length; i++) {
+          const a = piece[i];
+          const b = piece[(i + 1) % piece.length];
+          signedArea += a.x * b.y - a.y * b.x;
+        }
+        expect(signedArea).toBeLessThan(0);
+      }
+    });
+
+    it('rounds the outside of sharp hooks without overshooting', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 100, y: 0 },
+        { x: 0, y: 5 },
+      ];
+      const outline = geometry.getVariableWidthOutline(points, [20, 20, 20], 8);
+      const maxX = Math.max(...outline.flat().map((p) => p.x));
+      expect(maxX).toBeCloseTo(110);
+
+      expect(getWindingNumber({ x: 100, y: 5 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: 100, y: -5 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: 105, y: 0 }, outline)).not.toBe(0);
+    });
+
+    it('never reaches further from the line than half its width', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 3, y: 0 },
+        { x: 3, y: 3 },
+        { x: 0, y: 2 },
+        { x: 20, y: 2 },
+      ];
+      const widths = [2, 12, 4, 10, 6];
+      const outline = geometry.getVariableWidthOutline(points, widths);
+      const distanceToSegment = (pt: Point, start: Point, end: Point) => {
+        const seg = geometry.subtract(end, start);
+        const t = Math.max(
+          0,
+          Math.min(
+            1,
+            ((pt.x - start.x) * seg.x + (pt.y - start.y) * seg.y) /
+              (seg.x * seg.x + seg.y * seg.y),
+          ),
+        );
+        return geometry.distance(pt, { x: start.x + t * seg.x, y: start.y + t * seg.y });
+      };
+      for (const point of outline.flat()) {
+        const isWithinLine = points
+          .slice(1)
+          .some(
+            (end, i) =>
+              distanceToSegment(point, points[i], end) <=
+              Math.max(widths[i], widths[i + 1]) / 2 + 1e-9,
+          );
+        expect(isWithinLine).toBe(true);
+      }
     });
 
     it('draws a dot when there is only one point', () => {
       const outline = geometry.getVariableWidthOutline([{ x: 3, y: 4 }], [6], 4);
-      expect(outline.length).toBe(8);
-      outline.forEach((point) => {
+      expect(outline.length).toBe(1);
+      expect(outline[0].length).toBe(8);
+      outline[0].forEach((point) => {
         expect(geometry.distance(point, { x: 3, y: 4 })).toBeCloseTo(3);
       });
+    });
+
+    it('draws just the larger circle if it swallows the smaller one', () => {
+      const points = [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+      ];
+      const outline = geometry.getVariableWidthOutline(points, [10, 2]);
+      expect(getWindingNumber({ x: 4.9, y: 0 }, outline)).not.toBe(0);
+      expect(getWindingNumber({ x: 5.1, y: 0 }, outline)).toBe(0);
+      expect(getWindingNumber({ x: 0, y: 4.9 }, outline)).not.toBe(0);
     });
 
     it('merges repeated points, which have no direction to offset along', () => {
@@ -270,8 +438,7 @@ describe('geometry', () => {
         { x: 0, y: 0 },
         { x: 10, y: 0 },
       ];
-      expectPointsCloseTo(
-        geometry.getVariableWidthOutline(points, [1, 2, 4], 2),
+      expect(geometry.getVariableWidthOutline(points, [1, 2, 4], 2)).toEqual(
         geometry.getVariableWidthOutline(
           [
             { x: 0, y: 0 },
@@ -288,8 +455,7 @@ describe('geometry', () => {
         { x: 0, y: 0 },
         { x: 10, y: 0 },
       ];
-      expectPointsCloseTo(
-        geometry.getVariableWidthOutline(points, [2], 2),
+      expect(geometry.getVariableWidthOutline(points, [2], 2)).toEqual(
         geometry.getVariableWidthOutline(points, [2, 2], 2),
       );
     });

@@ -1,36 +1,14 @@
 import { ColorObject, RecursivePartial } from './typings/types';
 
-const getGlobal = () => {
-  if (typeof window !== 'undefined') return window;
-  if (typeof globalThis !== 'undefined') return globalThis;
-  return global;
-};
-const globalObj = getGlobal();
+const globalObj = globalThis;
 
-export const performanceNow =
-  (globalObj.performance && (() => globalObj.performance.now())) || (() => Date.now());
+export const performanceNow = () => globalObj.performance.now();
+// fall back to timers outside the browser (e.g. when rendered on a server or in tests)
 export const requestAnimationFrame =
   globalObj.requestAnimationFrame?.bind(globalObj) ||
   ((callback) => setTimeout(() => callback(performanceNow()), 1000 / 60));
 export const cancelAnimationFrame =
   globalObj.cancelAnimationFrame?.bind(globalObj) || clearTimeout;
-
-// Object.assign polyfill, because IE :/
-export const _assign = function (target: any, ...overrides: any[]) {
-  const overrideTarget = Object(target);
-  overrides.forEach((override) => {
-    if (override != null) {
-      for (const key in override) {
-        if (Object.prototype.hasOwnProperty.call(override, key)) {
-          overrideTarget[key] = override[key];
-        }
-      }
-    }
-  });
-  return overrideTarget;
-};
-
-export const assign = Object.assign || _assign;
 
 export function arrLast<TValue>(arr: Array<TValue>) {
   return arr[arr.length - 1];
@@ -160,10 +138,5 @@ export function objRepeatCb<T>(times: number, cb: (i: number) => T) {
   }
   return obj;
 }
-
-const ua = globalObj.navigator?.userAgent || '';
-
-export const isMsBrowser =
-  ua.indexOf('MSIE ') > 0 || ua.indexOf('Trident/') > 0 || ua.indexOf('Edge/') > 0;
 
 export const noop = () => {};

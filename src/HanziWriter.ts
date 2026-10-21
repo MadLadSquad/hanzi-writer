@@ -401,6 +401,8 @@ export default class HanziWriter {
           ...quizOptions,
         };
         this._quiz.startQuiz(this._options);
+        // custom render targets may not support this
+        this.target.setDrawingEnabled?.(true);
       }
     });
   }
@@ -415,6 +417,7 @@ export default class HanziWriter {
     if (this._quiz) {
       this._quiz.cancel();
       this._quiz = undefined;
+      this.target.setDrawingEnabled?.(false);
     }
   }
 
@@ -526,17 +529,26 @@ export default class HanziWriter {
     this.target.addPointerStartListener((evt) => {
       if (this._quiz) {
         evt.preventDefault();
-        this._quiz.startUserStroke(evt.getPoint(), evt.getPressure?.());
+        this._quiz.startUserStroke(evt.getPoint(), evt.getPressure?.(), evt.getTime?.());
       }
     });
     this.target.addPointerMoveListener((evt) => {
       if (this._quiz) {
         evt.preventDefault();
-        this._quiz.continueUserStroke(evt.getPoint(), evt.getPressure?.());
+        // custom render targets may only report the event's own position
+        const samples = evt.getSamples?.() ?? [
+          { point: evt.getPoint(), pressure: evt.getPressure?.(), time: evt.getTime?.() },
+        ];
+        this._quiz.continueUserStrokeSamples(samples);
       }
     });
-    this.target.addPointerEndListener(() => {
-      this._quiz?.endUserStroke();
+    this.target.addPointerEndListener((info) => {
+      // custom render targets may not report whether the pointer was canceled
+      if (info?.canceled) {
+        this._quiz?.cancelUserStroke();
+      } else {
+        this._quiz?.endUserStroke();
+      }
     });
   }
 }

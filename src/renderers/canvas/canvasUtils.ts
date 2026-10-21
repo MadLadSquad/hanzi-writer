@@ -11,15 +11,18 @@ export const drawPath = (ctx: CanvasRenderingContext2D, points: Point[]) => {
   ctx.stroke();
 };
 
-export const fillPath = (ctx: CanvasRenderingContext2D, points: Point[]) => {
-  if (points.length === 0) return;
+/** fill several polygons as a single shape, using the nonzero rule where they overlap */
+export const fillPolygons = (ctx: CanvasRenderingContext2D, polygons: Point[][]) => {
   ctx.beginPath();
-  const [start, ...remainingPoints] = points;
-  ctx.moveTo(start.x, start.y);
-  for (const point of remainingPoints) {
-    ctx.lineTo(point.x, point.y);
+  for (const polygon of polygons) {
+    if (polygon.length === 0) continue;
+    const [start, ...remainingPoints] = polygon;
+    ctx.moveTo(start.x, start.y);
+    for (const point of remainingPoints) {
+      ctx.lineTo(point.x, point.y);
+    }
+    ctx.closePath();
   }
-  ctx.closePath();
   ctx.fill();
 };
 

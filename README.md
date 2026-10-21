@@ -2,7 +2,6 @@
 Hanzi Writer
 =====================
 
-[![CircleCI](https://img.shields.io/circleci/project/github/chanind/hanzi-writer/master.svg)](https://circleci.com/gh/chanind/hanzi-writer/tree/master)
 [![Codecov](https://img.shields.io/codecov/c/github/chanind/hanzi-writer/master.svg)](https://codecov.io/gh/chanind/hanzi-writer)
 [![npm](https://img.shields.io/npm/v/hanzi-writer.svg)](https://www.npmjs.com/package/hanzi-writer)
 
@@ -15,6 +14,10 @@ Hanzi Writer is a free and open-source javascript library for Chinese character 
 ## Getting Started and Documentation
 
 For more info and instructions on getting started check out https://chanind.github.io/hanzi-writer
+
+## Browser support
+
+Hanzi Writer only supports modern browsers. The published build is ES2022 and isn't transpiled for older browsers, and drawing in quizzes relies on [Pointer Events](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events). That means Chrome / Edge 94+, Firefox 93+ and Safari 16.4+ (including on iOS). Internet Explorer and legacy (non-Chromium) Edge aren't supported.
 
 ## Data source
 

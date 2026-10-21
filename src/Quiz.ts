@@ -10,6 +10,7 @@ import {
   DrawingWidthOptions,
   ParsedHanziWriterOptions,
   Point,
+  PointerSample,
   StrokeData,
 } from './typings/types';
 import RenderState from './RenderState';
@@ -66,7 +67,11 @@ export default class Quiz {
     );
   }
 
-  startUserStroke(externalPoint: Point, pressure?: number) {
+  /**
+   * @param time when the point was drawn, in ms on the same clock as `performance.now()`.
+   * Defaults to now.
+   */
+  startUserStroke(externalPoint: Point, pressure?: number, time?: number) {
     if (!this._isActive) {
       return null;
     }
@@ -77,6 +82,7 @@ export default class Quiz {
     const strokeId = counter();
     this._userStroke = new UserStroke(strokeId, point, externalPoint, {
       pressure,
+      time,
       widthOptions: this._getDrawingWidthOptions(),
     });
     this._userStrokesIds?.push(strokeId);
@@ -89,12 +95,22 @@ export default class Quiz {
     );
   }
 
-  continueUserStroke(externalPoint: Point, pressure?: number) {
-    if (!this._userStroke) {
+  continueUserStroke(externalPoint: Point, pressure?: number, time?: number) {
+    return this.continueUserStrokeSamples([{ point: externalPoint, pressure, time }]);
+  }
+
+  /**
+   * Add several points to the stroke being drawn at once, e.g. the batch of positions a
+   * browser reports in a single pointer event, so the stroke is only re-rendered once
+   */
+  continueUserStrokeSamples(samples: PointerSample[]) {
+    if (!this._userStroke || samples.length === 0) {
       return Promise.resolve();
     }
-    const point = this._positioner.convertExternalPoint(externalPoint);
-    this._userStroke.appendPoint(point, externalPoint, { pressure });
+    for (const { point: externalPoint, pressure, time } of samples) {
+      const point = this._positioner.convertExternalPoint(externalPoint);
+      this._userStroke.appendPoint(point, externalPoint, { pressure, time });
+    }
     const nextPoints = this._userStroke.points.slice(0);
     return this._renderState.run(
       quizActions.updateUserStroke(
@@ -136,15 +152,21 @@ export default class Quiz {
     this._positioner = positioner;
   }
 
+  /**
+   * Discard the stroke currently being drawn without grading it, e.g. when the browser
+   * cancels the pointer because of palm rejection or a system gesture
+   */
+  cancelUserStroke() {
+    if (!this._userStroke) return;
+
+    this._removeUserStroke(this._userStroke.id);
+    this._userStroke = undefined;
+  }
+
   endUserStroke() {
     if (!this._userStroke) return;
 
-    this._renderState.run(
-      quizActions.hideUserStroke(
-        this._userStroke.id,
-        this._options!.drawingFadeDuration ?? 300,
-      ),
-    );
+    this._removeUserStroke(this._userStroke.id);
 
     // skip single-point strokes
     if (this._userStroke.points.length === 1) {
@@ -197,6 +219,20 @@ export default class Quiz {
     }
 
     this._userStroke = undefined;
+  }
+
+  /** Fade out a finished stroke, then remove it */
+  _removeUserStroke(userStrokeId: number) {
+    this._renderState
+      .run(
+        quizActions.removeUserStroke(
+          userStrokeId,
+          this._options!.drawingFadeDuration ?? 300,
+        ),
+      )
+      .then(() => {
+        this._userStrokesIds = this._userStrokesIds?.filter((id) => id !== userStrokeId);
+      });
   }
 
   cancel() {

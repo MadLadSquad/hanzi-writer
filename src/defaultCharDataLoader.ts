@@ -11,10 +11,7 @@ const defaultCharDataLoader = (
 ) => {
   // load char data from hanziwriter cdn (currently hosted on jsdelivr)
   const xhr = new XMLHttpRequest();
-  if (xhr.overrideMimeType) {
-    // IE 9 and 10 don't seem to support this...
-    xhr.overrideMimeType('application/json');
-  }
+  xhr.overrideMimeType('application/json');
   xhr.open('GET', getCharDataUrl(char), true);
   xhr.onerror = (event) => {
     onError(xhr, event);

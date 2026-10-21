@@ -108,6 +108,24 @@ describe('userStrokeWidth', () => {
       expect(getWidthScale({ pressure: 0, prevWidthScale: 1.5 }, options)).toBe(1);
       expect(getWidthScale({ pressure: 1, prevWidthScale: 0.5 }, options)).toBe(1);
     });
+
+    it('weights smoothing by elapsed time so high-rate pens match 60Hz touch', () => {
+      const afterOne60HzFrame = getWidthScale(
+        { pressure: 1, prevWidthScale: 0.5, elapsedTime: 16 },
+        options,
+      );
+      let scaleAt240Hz = 0.5;
+      for (let i = 0; i < 4; i++) {
+        scaleAt240Hz = getWidthScale(
+          { pressure: 1, prevWidthScale: scaleAt240Hz, elapsedTime: 4 },
+          options,
+        );
+      }
+      expect(scaleAt240Hz).toBeCloseTo(afterOne60HzFrame);
+      expect(
+        getWidthScale({ pressure: 1, prevWidthScale: 0.5, elapsedTime: 0 }, options),
+      ).toBe(0.5);
+    });
   });
 
   describe('getStrokeWidths', () => {

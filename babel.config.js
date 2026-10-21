@@ -1,19 +1,8 @@
-module.exports = (api) => {
-  const isTest = api.env('test');
-  return {
-    presets: [
-      [
-        '@babel/preset-env',
-        {
-          targets: isTest
-            ? { node: 'current' }
-            : {
-                browsers: '>2%',
-              },
-          modules: isTest ? 'commonjs' : false,
-        },
-      ],
-      '@babel/preset-typescript',
-    ],
-  };
+// Only used to run the tests under Jest. The published build is compiled by TypeScript
+// (see rollup.config.mjs).
+module.exports = {
+  presets: [
+    ['@babel/preset-env', { targets: { node: 'current' }, modules: 'commonjs' }],
+    '@babel/preset-typescript',
+  ],
 };

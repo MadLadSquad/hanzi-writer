@@ -212,7 +212,13 @@ export default class RenderState {
     for (const chain of this._mutationChains) {
       for (const chainId of chain._scopes) {
         for (const scopeToCancel of scopesToCancel) {
-          if (chainId.startsWith(scopeToCancel) || scopeToCancel.startsWith(chainId)) {
+          if (
+            chainId === scopeToCancel ||
+            scopeToCancel === '' ||
+            chainId === '' ||
+            chainId.startsWith(`${scopeToCancel}.`) ||
+            scopeToCancel.startsWith(`${chainId}.`)
+          ) {
             this._cancelMutationChain(chain);
           }
         }

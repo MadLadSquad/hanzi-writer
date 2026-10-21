@@ -1163,161 +1163,340 @@ describe('HanziWriter', () => {
     });
   });
 
-  describe('mouse and touch events', () => {
+  describe('pointer events', () => {
     let writer: HanziWriter;
+    let svg: SVGSVGElement;
+
+    /** jsdom doesn't implement PointerEvent, so its fields are added to a MouseEvent */
+    const pointerEvent = (
+      type: string,
+      {
+        clientX,
+        clientY,
+        timeStamp,
+        ...pointerProps
+      }: Record<string, any> & {
+        clientX?: number;
+        clientY?: number;
+        timeStamp?: number;
+      } = {},
+    ) => {
+      const evt = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX,
+        clientY,
+      });
+      Object.assign(evt, {
+        pointerId: 1,
+        pointerType: 'mouse',
+        isPrimary: true,
+        pressure: 0,
+        ...pointerProps,
+      });
+      if (timeStamp !== undefined) {
+        Object.defineProperty(evt, 'timeStamp', { value: timeStamp });
+      }
+      return evt;
+    };
+
+    /** dispatches the event and returns whether it was canceled */
+    const dispatch = (target: EventTarget, evt: Event) => !target.dispatchEvent(evt);
+
     beforeEach(async () => {
       document.body.innerHTML = '<div id="target"></div>';
       writer = HanziWriter.create('target', '人', { charDataLoader });
       await writer._withDataPromise;
       writer.quiz();
       await resolvePromises();
-    });
-
-    it('starts a user stroke on mousedown', () => {
-      const evt = new MouseEvent('mousedown', {
-        bubbles: true,
-        cancelable: true,
-        clientX: 170,
-        clientY: 127,
-      });
-      const svg = document.querySelector('#target svg')!;
+      svg = document.querySelector('#target svg')!;
       svg.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
-      const canceled = !svg!.dispatchEvent(evt);
-      expect(canceled).toBe(true);
+    });
+
+    it('starts a user stroke on pointerdown', () => {
+      const evt = pointerEvent('pointerdown', {
+        clientX: 170,
+        clientY: 127,
+        timeStamp: 42,
+      });
+      expect(dispatch(svg, evt)).toBe(true);
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith(
         { x: 120, y: 67 },
         undefined,
+        42,
       );
     });
 
-    it('starts a user stroke on touchstart', () => {
-      const evt = new TouchEvent('touchstart', {
-        bubbles: true,
-        cancelable: true,
-        touches: [
-          {
+    it('continues a user stroke on pointermove', () => {
+      const evt = pointerEvent('pointermove', {
+        clientX: 170,
+        clientY: 127,
+        timeStamp: 50,
+      });
+      expect(dispatch(svg, evt)).toBe(true);
+      expect(writer._quiz!.continueUserStrokeSamples).toHaveBeenCalledTimes(1);
+      expect(writer._quiz!.continueUserStrokeSamples).toHaveBeenCalledWith([
+        { point: { x: 120, y: 67 }, pressure: undefined, time: 50 },
+      ]);
+    });
+
+    it('passes along every position the browser batched into a pointermove', () => {
+      const evt = pointerEvent('pointermove', {
+        clientX: 190,
+        clientY: 147,
+        pointerType: 'pen',
+        pressure: 0.5,
+        timeStamp: 60,
+        getCoalescedEvents: () => [
+          pointerEvent('pointermove', {
+            clientX: 180,
+            clientY: 137,
+            pointerType: 'pen',
+            pressure: 0.3,
+            timeStamp: 56,
+          }),
+          pointerEvent('pointermove', {
+            clientX: 190,
+            clientY: 147,
+            pointerType: 'pen',
+            pressure: 0.5,
+            timeStamp: 60,
+          }),
+        ],
+      });
+      dispatch(svg, evt);
+      expect(writer._quiz!.continueUserStrokeSamples).toHaveBeenCalledWith([
+        { point: { x: 130, y: 77 }, pressure: 0.3, time: 56 },
+        { point: { x: 140, y: 87 }, pressure: 0.5, time: 60 },
+      ]);
+    });
+
+    it('passes stylus pressure along, but ignores the pressure a mouse or finger reports', () => {
+      dispatch(
+        svg,
+        pointerEvent('pointerdown', {
+          clientX: 170,
+          clientY: 127,
+          pointerType: 'pen',
+          pressure: 0.6,
+          timeStamp: 1,
+        }),
+      );
+      expect(writer._quiz!.startUserStroke).toHaveBeenLastCalledWith(
+        { x: 120, y: 67 },
+        0.6,
+        1,
+      );
+
+      for (const [pointerType, pressure] of [
+        ['mouse', 0.5],
+        ['touch', 1],
+      ] as const) {
+        dispatch(
+          svg,
+          pointerEvent('pointermove', {
             clientX: 170,
             clientY: 127,
-          },
-        ],
-      } as any);
-      const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
-      const canceled = !svg!.dispatchEvent(evt);
-      expect(canceled).toBe(true);
+            pointerType,
+            pressure,
+            timeStamp: 2,
+          }),
+        );
+        expect(writer._quiz!.continueUserStrokeSamples).toHaveBeenLastCalledWith([
+          { point: { x: 120, y: 67 }, pressure: undefined, time: 2 },
+        ]);
+      }
+    });
+
+    it('ignores other pointers, such as a resting palm, while a stroke is being drawn', () => {
+      dispatch(svg, pointerEvent('pointerdown', { pointerId: 1, pointerType: 'pen' }));
+      dispatch(svg, pointerEvent('pointerdown', { pointerId: 2, pointerType: 'touch' }));
+      dispatch(svg, pointerEvent('pointermove', { pointerId: 2, pointerType: 'touch' }));
+      dispatch(svg, pointerEvent('pointerup', { pointerId: 2, pointerType: 'touch' }));
       expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
-      expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith(
-        { x: 120, y: 67 },
-        undefined,
-      );
-    });
+      expect(writer._quiz!.continueUserStrokeSamples).not.toHaveBeenCalled();
+      expect(writer._quiz!.endUserStroke).not.toHaveBeenCalled();
 
-    it('continues a user stroke on mousemove', () => {
-      const evt = new MouseEvent('mousemove', {
-        bubbles: true,
-        cancelable: true,
-        clientX: 170,
-        clientY: 127,
-      });
-      const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
-      const canceled = !svg!.dispatchEvent(evt);
-      expect(canceled).toBe(true);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledTimes(1);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
-        { x: 120, y: 67 },
-        undefined,
-      );
-    });
-
-    it('continues a user stroke on touchmove', () => {
-      const evt = new TouchEvent('touchmove', {
-        bubbles: true,
-        cancelable: true,
-        touches: [
-          {
-            clientX: 170,
-            clientY: 127,
-          },
-        ],
-      } as any);
-      const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
-      const canceled = !svg!.dispatchEvent(evt);
-      expect(canceled).toBe(true);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledTimes(1);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
-        { x: 120, y: 67 },
-        undefined,
-      );
-    });
-
-    it('passes stylus pressure along from touch events which report it', () => {
-      const evt = new TouchEvent('touchstart', {
-        bubbles: true,
-        cancelable: true,
-        touches: [
-          {
-            clientX: 170,
-            clientY: 127,
-            force: 0.75,
-          },
-        ],
-      } as any);
-      const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
-      svg!.dispatchEvent(evt);
-      expect(writer._quiz!.startUserStroke).toHaveBeenCalledWith({ x: 120, y: 67 }, 0.75);
-    });
-
-    it('passes stylus pressure along from pointer events which report it', () => {
-      const evt = new MouseEvent('mousemove', {
-        bubbles: true,
-        cancelable: true,
-        clientX: 170,
-        clientY: 127,
-      });
-      // PointerEvent extends MouseEvent, so a pen fires mousemove listeners with pressure set
-      Object.assign(evt, { pressure: 0.25, pointerType: 'pen' });
-      const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
-      svg!.dispatchEvent(evt);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
-        { x: 120, y: 67 },
-        0.25,
-      );
-    });
-
-    it('ignores the pressure a mouse reports, since it carries no information', () => {
-      const evt = new MouseEvent('mousemove', {
-        bubbles: true,
-        cancelable: true,
-        clientX: 170,
-        clientY: 127,
-      });
-      Object.assign(evt, { pressure: 0.5, pointerType: 'mouse' });
-      const svg = document.querySelector('#target svg')!;
-      svg!.getBoundingClientRect = () => ({ left: 50, top: 60 }) as any;
-      svg!.dispatchEvent(evt);
-      expect(writer._quiz!.continueUserStroke).toHaveBeenCalledWith(
-        { x: 120, y: 67 },
-        undefined,
-      );
-    });
-
-    it('ends a user stroke on mouseup', () => {
-      const evt = new MouseEvent('mouseup', { bubbles: true, cancelable: true });
-      const svg = document.querySelector('#target svg')!;
-      svg!.dispatchEvent(evt);
+      dispatch(svg, pointerEvent('pointermove', { pointerId: 1, pointerType: 'pen' }));
+      dispatch(svg, pointerEvent('pointerup', { pointerId: 1, pointerType: 'pen' }));
+      expect(writer._quiz!.continueUserStrokeSamples).toHaveBeenCalledTimes(1);
       expect(writer._quiz!.endUserStroke).toHaveBeenCalledTimes(1);
     });
 
-    it('ends a user stroke on touchend', () => {
-      const evt = new TouchEvent('touchend', { bubbles: true, cancelable: true });
-      const svg = document.querySelector('#target svg')!;
-      svg!.dispatchEvent(evt);
+    it('stops touches from scrolling the page only while a stroke is being drawn', () => {
+      const touchMove = () =>
+        new TouchEvent('touchmove', { bubbles: true, cancelable: true });
+      expect(dispatch(svg, touchMove())).toBe(false);
+
+      dispatch(svg, pointerEvent('pointerdown', { pointerType: 'touch' }));
+      expect(dispatch(svg, new TouchEvent('touchstart', { cancelable: true }))).toBe(
+        true,
+      );
+      expect(dispatch(svg, touchMove())).toBe(true);
+
+      dispatch(svg, pointerEvent('pointerup', { pointerType: 'touch' }));
+      expect(dispatch(svg, touchMove())).toBe(false);
+    });
+
+    it('ends a user stroke on pointerup', () => {
+      dispatch(svg, pointerEvent('pointerup'));
       expect(writer._quiz!.endUserStroke).toHaveBeenCalledTimes(1);
+      expect(writer._quiz!.cancelUserStroke).not.toHaveBeenCalled();
+    });
+
+    it('ends a user stroke when the pointer is lifted outside of the target', () => {
+      // nothing listens on the document until a press starts
+      dispatch(document, pointerEvent('pointerup'));
+      expect(writer._quiz!.endUserStroke).not.toHaveBeenCalled();
+
+      dispatch(svg, pointerEvent('pointerdown'));
+      dispatch(document, pointerEvent('pointerup'));
+      expect(writer._quiz!.endUserStroke).toHaveBeenCalledTimes(1);
+
+      // and stops listening once the press is over
+      dispatch(document, pointerEvent('pointerup'));
+      expect(writer._quiz!.endUserStroke).toHaveBeenCalledTimes(1);
+    });
+
+    it('discards the stroke without grading it on pointercancel', () => {
+      dispatch(svg, pointerEvent('pointerdown', { pointerType: 'pen' }));
+      dispatch(svg, pointerEvent('pointercancel', { pointerType: 'pen' }));
+      expect(writer._quiz!.cancelUserStroke).toHaveBeenCalledTimes(1);
+      expect(writer._quiz!.endUserStroke).not.toHaveBeenCalled();
+    });
+
+    describe('pointer capture', () => {
+      let capturedIds: Set<number>;
+
+      beforeEach(() => {
+        capturedIds = new Set();
+        svg.setPointerCapture = jest.fn((id: number) => {
+          capturedIds.add(id);
+        });
+        svg.hasPointerCapture = jest.fn((id: number) => capturedIds.has(id));
+        svg.releasePointerCapture = jest.fn((id: number) => {
+          capturedIds.delete(id);
+        });
+      });
+
+      it('captures the pointer drawing the stroke', () => {
+        dispatch(svg, pointerEvent('pointerdown', { pointerId: 7, pointerType: 'pen' }));
+        expect(svg.setPointerCapture).toHaveBeenCalledWith(7);
+      });
+
+      it('does not claim a pointer outside of a quiz', () => {
+        writer.cancelQuiz();
+        dispatch(svg, pointerEvent('pointerdown', { pointerId: 7, pointerType: 'pen' }));
+        expect(svg.setPointerCapture).not.toHaveBeenCalled();
+      });
+
+      it('discards the stroke if the pointer is lost without being lifted', () => {
+        dispatch(svg, pointerEvent('pointerdown', { pointerId: 7, pointerType: 'pen' }));
+        capturedIds.delete(7);
+        dispatch(svg, pointerEvent('lostpointercapture', { pointerId: 7 }));
+        expect(writer._quiz!.cancelUserStroke).toHaveBeenCalledTimes(1);
+      });
+
+      it('replaces the drawing pointer if it was lost without us hearing about it', () => {
+        dispatch(
+          svg,
+          pointerEvent('pointerdown', { pointerId: 7, pointerType: 'mouse' }),
+        );
+        capturedIds.delete(7);
+        dispatch(
+          svg,
+          pointerEvent('pointerdown', { pointerId: 8, pointerType: 'touch' }),
+        );
+        expect(writer._quiz!.cancelUserStroke).toHaveBeenCalledTimes(1);
+        expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(2);
+        expect(svg.setPointerCapture).toHaveBeenLastCalledWith(8);
+      });
+
+      it('lets a stylus take over from a palm which touched down first', () => {
+        dispatch(
+          svg,
+          pointerEvent('pointerdown', { pointerId: 3, pointerType: 'touch' }),
+        );
+        dispatch(svg, pointerEvent('pointerdown', { pointerId: 4, pointerType: 'pen' }));
+        expect(svg.releasePointerCapture).toHaveBeenCalledWith(3);
+        expect(writer._quiz!.cancelUserStroke).toHaveBeenCalledTimes(1);
+        expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(2);
+
+        // the palm is ignored from then on
+        dispatch(
+          svg,
+          pointerEvent('pointermove', { pointerId: 3, pointerType: 'touch' }),
+        );
+        expect(writer._quiz!.continueUserStrokeSamples).not.toHaveBeenCalled();
+        dispatch(svg, pointerEvent('pointermove', { pointerId: 4, pointerType: 'pen' }));
+        expect(writer._quiz!.continueUserStrokeSamples).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not let a touch take over from a stylus', () => {
+        dispatch(svg, pointerEvent('pointerdown', { pointerId: 4, pointerType: 'pen' }));
+        dispatch(
+          svg,
+          pointerEvent('pointerdown', { pointerId: 3, pointerType: 'touch' }),
+        );
+        expect(writer._quiz!.cancelUserStroke).not.toHaveBeenCalled();
+        expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not claim a pointer which can no longer be captured', () => {
+        svg.setPointerCapture = jest.fn(() => {
+          throw new Error('NotFoundError');
+        });
+        dispatch(
+          svg,
+          pointerEvent('pointerdown', { pointerId: 5, pointerType: 'touch' }),
+        );
+        // nothing was claimed, so a different pointer isn't ignored
+        dispatch(
+          svg,
+          pointerEvent('pointermove', { pointerId: 6, pointerType: 'touch' }),
+        );
+        expect(writer._quiz!.continueUserStrokeSamples).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('recovers if a previous pointer went away without firing pointerup', () => {
+      const firstStrokeDown = pointerEvent('pointerdown', {
+        pointerId: 11,
+        pointerType: 'touch',
+      });
+      dispatch(svg, firstStrokeDown);
+      expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(1);
+
+      // pointer 11 disappears without pointerup; a new primary touch pointerdown replaces it
+      dispatch(svg, pointerEvent('pointerdown', { pointerId: 12, pointerType: 'touch' }));
+      expect(writer._quiz!.cancelUserStroke).toHaveBeenCalledTimes(1);
+      expect(writer._quiz!.startUserStroke).toHaveBeenCalledTimes(2);
+    });
+
+    it('disables browser touch gestures and text selection only while a quiz is active', () => {
+      expect(svg.style.touchAction).toBe('none');
+      expect(svg.style.userSelect).toBe('none');
+
+      writer.cancelQuiz();
+      expect(svg.style.touchAction).toBe('');
+      expect(svg.style.userSelect).toBe('');
+    });
+
+    it('restores the styles the target had before the quiz, unless the page changed them', () => {
+      writer.cancelQuiz();
+      svg.style.touchAction = 'pan-y';
+      svg.style.userSelect = 'text';
+
+      writer.quiz();
+      return resolvePromises().then(() => {
+        expect(svg.style.touchAction).toBe('none');
+        svg.style.userSelect = 'all';
+
+        writer.cancelQuiz();
+        expect(svg.style.touchAction).toBe('pan-y');
+        expect(svg.style.userSelect).toBe('all');
+      });
     });
   });
 

@@ -5,7 +5,7 @@ import { copyAndMergeDeep } from '../../../utils';
 import Positioner from '../../../Positioner';
 import parseCharData from '../../../parseCharData';
 import { RenderStateObject } from '../../../RenderState';
-import { getPathString, getVariableWidthOutline } from '../../../geometry';
+import { getOutlinePathString, getVariableWidthOutline } from '../../../geometry';
 
 const char = parseCharData('人', ren);
 const positioner = new Positioner({
@@ -134,7 +134,7 @@ describe('HanziWriterRenderer', () => {
     expect(userStrokes[0].getAttribute('stroke')).toBe('none');
     // 1 unit wide where it starts and 2 units wide where it ends, drawingWidth being 4
     expect(userStrokes[0].getAttribute('d')).toBe(
-      getPathString(
+      getOutlinePathString(
         getVariableWidthOutline(
           [
             { x: 0, y: 0 },
@@ -142,7 +142,6 @@ describe('HanziWriterRenderer', () => {
           ],
           [2, 4],
         ),
-        true,
       ),
     );
   });

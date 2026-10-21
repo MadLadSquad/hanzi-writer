@@ -14,8 +14,14 @@ export const REFERENCE_SPEED = 1.5;
  */
 export const REFERENCE_PRESSURE = 0.5;
 
-/** How much of the previous point's width carries over, to keep the line from getting jittery */
+/**
+ * How much of the previous point's width carries over after one 60Hz frame, to keep the
+ * line from getting jittery
+ */
 export const WIDTH_SMOOTHING = 0.5;
+
+/** Frame duration, in ms, that `WIDTH_SMOOTHING` is calibrated for (roughly 60Hz) */
+export const REFERENCE_FRAME_DURATION = 16;
 
 const NEUTRAL_SIGNAL = 0.5;
 
@@ -52,6 +58,12 @@ export type WidthScaleParams = {
   speed?: number;
   /** Width scale of the previous point in the stroke, used to smooth out jitter */
   prevWidthScale?: number;
+  /**
+   * Time since the previous point, in ms, so smoothing is independent of input polling rate.
+   * 0 means no time has passed, so the previous width is kept. If unknown, the previous width
+   * is weighted as if one 60Hz frame had passed.
+   */
+  elapsedTime?: number;
 };
 
 /**
@@ -59,7 +71,7 @@ export type WidthScaleParams = {
  * how hard the stylus is being pressed and how fast the stroke is being drawn.
  */
 export const getWidthScale = (
-  { pressure, speed, prevWidthScale }: WidthScaleParams,
+  { pressure, speed, prevWidthScale, elapsedTime }: WidthScaleParams,
   options: DrawingWidthOptions,
 ) => {
   const {
@@ -86,7 +98,16 @@ export const getWidthScale = (
   if (prevWidthScale === undefined) {
     return widthScale;
   }
-  return prevWidthScale * WIDTH_SMOOTHING + widthScale * (1 - WIDTH_SMOOTHING);
+  if (elapsedTime !== undefined && elapsedTime <= 0) {
+    // no time has passed since the previous point, so the width can't have changed yet.
+    // This is the limit of the time-weighted smoothing below as elapsedTime approaches 0.
+    return prevWidthScale;
+  }
+  const smoothing =
+    elapsedTime !== undefined
+      ? Math.pow(WIDTH_SMOOTHING, elapsedTime / REFERENCE_FRAME_DURATION)
+      : WIDTH_SMOOTHING;
+  return prevWidthScale * smoothing + widthScale * (1 - smoothing);
 };
 
 /**

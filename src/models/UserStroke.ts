@@ -3,6 +3,22 @@ import { DrawingWidthOptions, Point } from '../typings/types';
 import { getWidthScale } from '../userStrokeWidth';
 import { arrLast, performanceNow } from '../utils';
 
+/**
+ * Minimum time window (in ms) to average drawing speed over when queued pointer events
+ * arrive in a tight burst
+ */
+const SPEED_SAMPLE_WINDOW = 8;
+
+/**
+ * Minimum elapsed time (in ms) before speed can be meaningfully estimated
+ */
+const MIN_SPEED_ELAPSED_TIME = 1;
+
+/**
+ * Maximum number of previous points to look back over when estimating drawing speed
+ */
+const MAX_SPEED_SAMPLE_POINTS = 16;
+
 export type UserStrokePointOptions = {
   /** Stylus pressure between 0 and 1, if the device reports it */
   pressure?: number;
@@ -47,7 +63,6 @@ export default class UserStroke {
     externalPoint: Point,
     { pressure, time = performanceNow() }: UserStrokePointOptions = {},
   ) {
-    const prevPoint = arrLast(this.points);
     const prevTime = arrLast(this.times);
 
     this.points.push(point);
@@ -55,19 +70,43 @@ export default class UserStroke {
     this.times.push(time);
 
     if (this._widthOptions && this.widthScales) {
-      const elapsedTime = time - prevTime;
       this.widthScales.push(
         getWidthScale(
           {
             pressure,
-            // pointer events can arrive with no time between them, which says nothing about
-            // how fast the stroke is being drawn
-            speed: elapsedTime > 0 ? distance(point, prevPoint) / elapsedTime : undefined,
+            speed: this._getSpeed(),
             prevWidthScale: arrLast(this.widthScales),
+            // timestamps never run backwards, but guard against inconsistent time sources
+            elapsedTime: Math.max(time - prevTime, 0),
           },
           this._widthOptions,
         ),
       );
     }
+  }
+
+  /**
+   * Drawing speed at the latest point, in character units per ms, averaged over at least
+   * `SPEED_SAMPLE_WINDOW` ms (or as much of the stroke as is available) so a burst of queued
+   * events doesn't look like a sudden flick. Returns undefined if too little time has passed
+   * to tell how fast the stroke is being drawn.
+   */
+  _getSpeed(): number | undefined {
+    const lastIndex = this.points.length - 1;
+    // bound the work per point, in case timestamps don't advance (e.g. coarsened timers)
+    const firstIndex = Math.max(0, lastIndex - MAX_SPEED_SAMPLE_POINTS);
+    const latestTime = this.times[lastIndex];
+    let totalDistance = 0;
+    let elapsedTime = 0;
+    for (let i = lastIndex; i > firstIndex; i--) {
+      totalDistance += distance(this.points[i], this.points[i - 1]);
+      elapsedTime = latestTime - this.times[i - 1];
+      if (elapsedTime >= SPEED_SAMPLE_WINDOW) {
+        break;
+      }
+    }
+    // pointer events can arrive with little or no time between them when the main thread
+    // is busy, which says nothing about how fast the stroke is being drawn
+    return elapsedTime >= MIN_SPEED_ELAPSED_TIME ? totalDistance / elapsedTime : undefined;
   }
 }

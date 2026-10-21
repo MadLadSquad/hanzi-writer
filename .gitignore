@@ -8,3 +8,6 @@ coverage
 cdn
 dist
 _site
+.agents/
+.claude/
+graphify-out/

@@ -168,14 +168,23 @@ export const normalizeCurve = (curve: Point[]) => {
 };
 
 /** rotate a single vector around the origin by theta radians */
-export const rotateVector = (vect: Point, theta: number) => ({
-  x: Math.cos(theta) * vect.x - Math.sin(theta) * vect.y,
-  y: Math.sin(theta) * vect.x + Math.cos(theta) * vect.y,
-});
+export const rotateVector = (vect: Point, theta: number) => {
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+  return {
+    x: cos * vect.x - sin * vect.y,
+    y: sin * vect.x + cos * vect.y,
+  };
+};
 
 // rotate around the origin
 export const rotate = (curve: Point[], theta: number) => {
-  return curve.map((point) => rotateVector(point, theta));
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+  return curve.map((point) => ({
+    x: cos * point.x - sin * point.y,
+    y: sin * point.x + cos * point.y,
+  }));
 };
 
 // remove intermediate points that are on the same line as the points to either side
@@ -232,38 +241,17 @@ const scaleVector = (vect: Point, scale: number) => ({
   y: vect.y * scale,
 });
 
-const normalizeVector = (vect: Point) => {
-  const mag = magnitude(vect);
-  if (mag === 0) return { x: 0, y: 0 };
-  return { x: vect.x / mag, y: vect.y / mag };
-};
-
 /** the vector perpendicular to `vect`, rotated a quarter turn counter-clockwise */
 const perpendicular = (vect: Point) => ({ x: -vect.y, y: vect.x });
 
-/** number of segments used to draw the round caps at either end of a variable-width stroke */
+const cross = (v1: Point, v2: Point) => v1.x * v2.y - v1.y * v2.x;
+
+const dot = (v1: Point, v2: Point) => v1.x * v2.x + v1.y * v2.y;
+
+/** number of segments used to draw each half circle of a variable-width stroke */
 const CAP_SEGMENTS = 8;
 
-/**
- * corners scale the offset of the outline by 1 / cos(angle / 2) so the outline stays the
- * requested width all the way through the turn. This caps how far that offset can grow,
- * so that very sharp corners don't shoot off into a spike.
- */
-const MAX_MITER_SCALE = 2;
-
-/**
- * points along a half circle centered on `center`, starting at `center + startOffset` and
- * sweeping clockwise to `center - startOffset`. Both endpoints are excluded, since callers
- * already have them as part of the outline.
- */
-const halfCircleArc = (center: Point, startOffset: Point, segments: number) => {
-  const arc: Point[] = [];
-  for (let i = 1; i < segments; i++) {
-    arc.push(add(center, rotateVector(startOffset, (-1 * Math.PI * i) / segments)));
-  }
-  return arc;
-};
-
+/** points around a full circle, going clockwise */
 const circleOutline = (center: Point, radius: number, segments: number) => {
   const points: Point[] = [];
   for (let i = 0; i < segments; i++) {
@@ -274,70 +262,155 @@ const circleOutline = (center: Point, radius: number, segments: number) => {
   return points;
 };
 
+/** twice the signed area of the polygon, positive if it winds counter-clockwise */
+const signedArea = (polygon: Point[]) => {
+  let area = 0;
+  for (let i = 0; i < polygon.length; i++) {
+    area += cross(polygon[i], polygon[(i + 1) % polygon.length]);
+  }
+  return area;
+};
+
+/** the polygon, reversed if needed so it winds clockwise like every other piece */
+const clockwise = (polygon: Point[]) =>
+  signedArea(polygon) > 0 ? polygon.reverse() : polygon;
+
 /**
- * Build a closed outline around `points` where the line is `widths[i]` wide at `points[i]`,
- * with round caps at either end. Filling this outline draws a line whose width varies along
- * its length, which isn't something a plain stroked path can do.
+ * Directions from the start and end of a segment to where the line drawn along it touches
+ * the circles drawn at either end, on its left and right sides. If one circle sits entirely
+ * inside the other, there's nothing to join, so this returns null.
+ */
+const getSegmentTangents = (
+  start: Point,
+  end: Point,
+  startRadius: number,
+  endRadius: number,
+) => {
+  const vect = subtract(end, start);
+  const length = magnitude(vect);
+  const sinAngle = (startRadius - endRadius) / length;
+  if (Math.abs(sinAngle) >= 1) {
+    return null;
+  }
+  const dir = scaleVector(vect, 1 / length);
+  const normal = scaleVector(perpendicular(dir), Math.sqrt(1 - sinAngle * sinAngle));
+  // as the line narrows, the points where it touches the circles tilt towards the smaller one
+  const forward = scaleVector(dir, sinAngle);
+  return { dir, sinAngle, left: add(normal, forward), right: subtract(forward, normal) };
+};
+
+/**
+ * The part of `polygon` (which must be convex) where `getDistance` is at least 0, using the
+ * Sutherland-Hodgman algorithm. `getDistance` must be linear, i.e. measure the signed
+ * distance from a straight line.
+ */
+const clipPolygon = (polygon: Point[], getDistance: (point: Point) => number) => {
+  const clipped: Point[] = [];
+  polygon.forEach((point, i) => {
+    const next = polygon[(i + 1) % polygon.length];
+    const distance = getDistance(point);
+    const nextDistance = getDistance(next);
+    if (distance >= 0) {
+      clipped.push(point);
+    }
+    if (distance >= 0 !== nextDistance >= 0) {
+      const t = distance / (distance - nextDistance);
+      clipped.push(add(point, scaleVector(subtract(next, point), t)));
+    }
+  });
+  return clipped;
+};
+
+/**
+ * Build the outline of a line through `points`, where the line is `widths[i]` wide at
+ * `points[i]`, with round caps and corners. Filling this draws a line whose width varies
+ * along its length, which isn't something a plain stroked path can do.
+ *
+ * The outline is made of several convex polygons, which overlap where the line bends: one
+ * along each segment (the hull of the circles at either end), the part of the circle at each
+ * corner which those leave uncovered (rounding off the outside of a bend) and a circle at
+ * either end. They all wind the same way, so filling them together with the nonzero rule (the
+ * default for both canvas and SVG) fills everywhere any of them covers, without gaps or holes
+ * however sharply the line turns or quickly its width changes, and without darkening where
+ * they overlap.
  */
 export const getVariableWidthOutline = (
   points: Point[],
   widths: number[],
   capSegments = CAP_SEGMENTS,
-): Point[] => {
+): Point[][] => {
   if (points.length === 0) return [];
 
   // zero-length segments have no direction to offset along, so merge them into a single point
   const curve: Point[] = [];
-  const halfWidths: number[] = [];
+  const radii: number[] = [];
   points.forEach((point, i) => {
-    const halfWidth = Math.max(widths[i] ?? arrLast(widths) ?? 0, 0) / 2;
+    const radius = Math.max(widths[i] ?? arrLast(widths) ?? 0, 0) / 2;
     if (curve.length > 0 && equals(arrLast(curve), point)) {
-      halfWidths[halfWidths.length - 1] = Math.max(arrLast(halfWidths), halfWidth);
+      radii[radii.length - 1] = Math.max(arrLast(radii), radius);
       return;
     }
     curve.push(point);
-    halfWidths.push(halfWidth);
+    radii.push(radius);
   });
 
-  if (curve.length === 1) {
-    return circleOutline(curve[0], halfWidths[0], 2 * capSegments);
-  }
-
-  const leftSide: Point[] = [];
-  const rightSide: Point[] = [];
-  const offsets: Point[] = [];
-
-  for (let i = 0; i < curve.length; i++) {
-    const inDir = i > 0 ? normalizeVector(subtract(curve[i], curve[i - 1])) : null;
-    const outDir =
-      i < curve.length - 1 ? normalizeVector(subtract(curve[i + 1], curve[i])) : null;
-
-    const direction = (() => {
-      if (!inDir) return outDir!;
-      if (!outDir) return inDir;
-      const bisector = normalizeVector(add(inDir, outDir));
-      // a complete reversal has no meaningful bisector, so just keep going the way we came
-      return magnitude(bisector) === 0 ? inDir : bisector;
-    })();
-
-    const miterScale = inDir
-      ? 1 / Math.max(cosineSimilarity(direction, inDir), 1 / MAX_MITER_SCALE)
-      : 1;
-    const offset = scaleVector(
-      perpendicular(direction),
-      halfWidths[i] * (outDir && inDir ? miterScale : 1),
-    );
-
-    offsets.push(offset);
-    leftSide.push(add(curve[i], offset));
-    rightSide.push(subtract(curve[i], offset));
-  }
-
   const lastIndex = curve.length - 1;
-  return [
-    ...leftSide,
-    ...halfCircleArc(curve[lastIndex], offsets[lastIndex], capSegments),
-    ...rightSide.reverse(),
-    ...halfCircleArc(curve[0], scaleVector(offsets[0], -1), capSegments),
-  ];
+  const pieces: Point[][] = [circleOutline(curve[0], radii[0], 2 * capSegments)];
+  if (lastIndex === 0) {
+    return pieces;
+  }
+
+  const tangents = curve
+    .slice(1)
+    .map((point, i) => getSegmentTangents(curve[i], point, radii[i], radii[i + 1]));
+
+  tangents.forEach((segmentTangents, i) => {
+    if (!segmentTangents) return;
+    const { left, right } = segmentTangents;
+    const [start, end] = [curve[i], curve[i + 1]];
+    const [startRadius, endRadius] = [radii[i], radii[i + 1]];
+    pieces.push(
+      clockwise([
+        add(start, scaleVector(left, startRadius)),
+        add(end, scaleVector(left, endRadius)),
+        add(end, scaleVector(right, endRadius)),
+        add(start, scaleVector(right, startRadius)),
+      ]),
+    );
+  });
+
+  for (let i = 1; i < lastIndex; i++) {
+    const incoming = tangents[i - 1];
+    const outgoing = tangents[i];
+    if (!incoming || !outgoing) {
+      // a segment on one side is swallowed by the circles at its ends, so draw the whole circle
+      pieces.push(circleOutline(curve[i], radii[i], 2 * capSegments));
+      continue;
+    }
+    // The segment pieces on either side each cover the circle here up to a straight edge
+    // across the line (through where their sides touch the circle). Whatever lies past the
+    // end of one and before the start of the other is left for the corner piece to fill: the
+    // outside of a bend, or a sliver where the width changes how quickly it's growing.
+    const center = curve[i];
+    const radius = radii[i];
+    const corner = clipPolygon(
+      clipPolygon(
+        circleOutline(center, radius, 2 * capSegments),
+        (point) =>
+          dot(subtract(point, center), incoming.dir) - radius * incoming.sinAngle,
+      ),
+      (point) => radius * outgoing.sinAngle - dot(subtract(point, center), outgoing.dir),
+    );
+    // where the line carries straight on, nothing (or a sliver of no width) is left over
+    if (corner.length >= 3 && Math.abs(signedArea(corner)) > 1e-6 * radius * radius) {
+      pieces.push(corner);
+    }
+  }
+
+  pieces.push(circleOutline(curve[lastIndex], radii[lastIndex], 2 * capSegments));
+  return pieces;
 };
+
+/** SVG path string for every polygon of a variable-width outline, filled as one shape */
+export const getOutlinePathString = (outline: Point[][]) =>
+  outline.map((polygon) => getPathString(polygon, true)).join(' ');

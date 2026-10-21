@@ -1,6 +1,5 @@
 import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
-import babel from '@rollup/plugin-babel';
 import { createRequire } from 'module';
 import license from 'rollup-plugin-license';
 import filesize from 'rollup-plugin-filesize';
@@ -44,13 +43,10 @@ export default [
     ],
     plugins: [
       filesize(),
-      ts(),
+      // Only modern browsers are supported, so the output is left at the ES2022 target set in
+      // tsconfig.json rather than being transpiled down for older ones
+      ts({ browserslist: false }),
       resolve({ extensions }),
-      babel({
-        exclude: 'node_modules/**',
-        extensions,
-        babelHelpers: 'bundled',
-      }),
       license({
         banner: `Hanzi Writer v<%= pkg.version %> | https://chanind.github.io/hanzi-writer`,
       }),

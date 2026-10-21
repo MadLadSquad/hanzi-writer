@@ -53,7 +53,7 @@ export default class RenderTarget extends RenderTargetBase<SVGSVGElement | SVGEl
     return new RenderTarget(group, this.defs);
   }
 
-  _getMousePoint(evt: MouseEvent) {
+  _getPointerPoint(evt: PointerEvent) {
     if (this._pt) {
       this._pt.x = evt.clientX;
       this._pt.y = evt.clientY;
@@ -62,20 +62,6 @@ export default class RenderTarget extends RenderTargetBase<SVGSVGElement | SVGEl
         return { x: localPt.x, y: localPt.y };
       }
     }
-    return super._getMousePoint.call(this, evt);
-  }
-
-  _getTouchPoint(evt: TouchEvent) {
-    if (this._pt) {
-      this._pt.x = evt.touches[0].clientX;
-      this._pt.y = evt.touches[0].clientY;
-      if ('getScreenCTM' in this.node) {
-        const localPt = this._pt.matrixTransform(
-          (this.node as SVGSVGElement).getScreenCTM()?.inverse(),
-        );
-        return { x: localPt.x, y: localPt.y };
-      }
-    }
-    return super._getTouchPoint(evt);
+    return super._getPointerPoint(evt);
   }
 }

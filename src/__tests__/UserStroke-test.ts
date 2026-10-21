@@ -121,5 +121,28 @@ describe('UserStroke', () => {
 
     // with nothing known about the point, it keeps the width it already had
     expect(stroke.widthScales![1]).toBe(stroke.widthScales![0]);
+
+    // even if pressure changes, zero elapsed time keeps the previous width
+    stroke.appendPoint({ x: 300, y: 0 }, { x: 300, y: 0 }, { time: 5, pressure: 1 });
+    expect(stroke.widthScales![2]).toBe(stroke.widthScales![0]);
+  });
+
+  it('averages speed over a short window when queued events arrive in a burst', () => {
+    const stroke = new UserStroke(
+      1,
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+      {
+        time: 0,
+        widthOptions,
+      },
+    );
+    stroke.appendPoint({ x: 12, y: 0 }, { x: 12, y: 0 }, { time: 16 });
+    // second event arrives 0.1ms later after the main thread unblocks
+    stroke.appendPoint({ x: 24, y: 0 }, { x: 24, y: 0 }, { time: 16.1 });
+
+    // 24 units over 16.1ms is ~1.49 units/ms (rather than 12 / 0.1 = 120 units/ms)
+    expect(stroke._getSpeed()).toBeCloseTo(24 / 16.1);
+    expect(stroke.widthScales![2]).toBeGreaterThan(1);
   });
 });

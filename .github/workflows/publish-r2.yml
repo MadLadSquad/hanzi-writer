@@ -1,10 +1,19 @@
 name: Publish minified build to Cloudflare R2
 
+# Every build is uploaded to its own immutable path, builds/<commit sha>/, and then copied over
+# the "latest" files at the bucket root. To roll the latest files back to an earlier build, run
+# this workflow manually with that build's commit sha.
+
 on:
   push:
     branches:
       - master
   workflow_dispatch:
+    inputs:
+      rollback_sha:
+        description: Point the latest files at an earlier build (full commit sha) instead of building
+        required: false
+        default: ''
 
 concurrency:
   group: publish-r2
@@ -15,9 +24,16 @@ permissions:
 
 env:
   R2_BUCKET: youyin-data
+  JS_CONTENT_TYPE: application/javascript; charset=utf-8
+  MAP_CONTENT_TYPE: application/json; charset=utf-8
+  # the latest files change with every push, so only cache them briefly
+  LATEST_CACHE_CONTROL: public, max-age=3600
+  # a build's own files never change once uploaded
+  BUILD_CACHE_CONTROL: public, max-age=31536000, immutable
 
 jobs:
   publish:
+    if: ${{ !inputs.rollback_sha }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -31,6 +47,16 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+
+      # never publish a build which doesn't pass the same checks as CI
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Lint
+        run: yarn lint-test
+
+      - name: Test
+        run: yarn test
 
       - name: Build
         run: yarn build
@@ -51,12 +77,51 @@ jobs:
           AWS_REQUEST_CHECKSUM_CALCULATION: when_required
           AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
         run: |
-          aws s3 cp dist/hanzi-writer.min.js "s3://${R2_BUCKET}/hanzi-writer.min.js" \
-            --endpoint-url "${R2_ENDPOINT}" \
-            --content-type "application/javascript; charset=utf-8" \
-            --cache-control "public, max-age=3600"
+          set -euo pipefail
+          upload() {
+            aws s3 cp "$1" "s3://${R2_BUCKET}/$2" \
+              --endpoint-url "${R2_ENDPOINT}" \
+              --content-type "$3" \
+              --cache-control "$4"
+          }
 
-          aws s3 cp dist/hanzi-writer.min.js.map "s3://${R2_BUCKET}/hanzi-writer.min.js.map" \
-            --endpoint-url "${R2_ENDPOINT}" \
-            --content-type "application/json; charset=utf-8" \
-            --cache-control "public, max-age=3600"
+          build_dir="builds/${GITHUB_SHA}"
+          upload dist/hanzi-writer.min.js.map "${build_dir}/hanzi-writer.min.js.map" "${MAP_CONTENT_TYPE}" "${BUILD_CACHE_CONTROL}"
+          upload dist/hanzi-writer.min.js "${build_dir}/hanzi-writer.min.js" "${JS_CONTENT_TYPE}" "${BUILD_CACHE_CONTROL}"
+
+          # the map goes first, so the latest script never points at a map from an older build
+          upload dist/hanzi-writer.min.js.map hanzi-writer.min.js.map "${MAP_CONTENT_TYPE}" "${LATEST_CACHE_CONTROL}"
+          upload dist/hanzi-writer.min.js hanzi-writer.min.js "${JS_CONTENT_TYPE}" "${LATEST_CACHE_CONTROL}"
+
+  rollback:
+    if: ${{ inputs.rollback_sha }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point the latest files at an earlier build
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.PACKAGE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.PACKAGE_R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+        run: |
+          set -euo pipefail
+          if ! [[ "${ROLLBACK_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "rollback_sha must be a full 40 character commit sha" >&2
+            exit 1
+          fi
+          build_dir="builds/${ROLLBACK_SHA}"
+          # fail before changing anything if that build was never uploaded
+          aws s3 ls "s3://${R2_BUCKET}/${build_dir}/hanzi-writer.min.js" --endpoint-url "${R2_ENDPOINT}"
+
+          copy() {
+            aws s3 cp "s3://${R2_BUCKET}/${build_dir}/$1" "s3://${R2_BUCKET}/$1" \
+              --endpoint-url "${R2_ENDPOINT}" \
+              --metadata-directive REPLACE \
+              --content-type "$2" \
+              --cache-control "${LATEST_CACHE_CONTROL}"
+          }
+          copy hanzi-writer.min.js.map "${MAP_CONTENT_TYPE}"
+          copy hanzi-writer.min.js "${JS_CONTENT_TYPE}"

@@ -56,8 +56,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.08689266695452384,
-      "y": 0.49239177940896844,
+      "x": 0.5,
+      "y": 0,
     },
     "transform": [
       1,
@@ -71,8 +71,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 15.469170566261447,
-      "y": 3.7453051882597883,
+      "x": 0.46193976625564337,
+      "y": -0.1913417161825449,
     },
     "transform": [
       1,
@@ -86,8 +86,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 7.676470588235294,
-      "y": 17.294117647058822,
+      "x": 0.3535533905932738,
+      "y": -0.35355339059327373,
     },
     "transform": [
       1,
@@ -101,8 +101,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 7.50708878412441,
-      "y": 17.854342519887005,
+      "x": 0.19134171618254492,
+      "y": -0.46193976625564337,
     },
     "transform": [
       1,
@@ -116,8 +116,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 7.564989179356712,
-      "y": 18.436742423674044,
+      "x": 3.061616997868383e-17,
+      "y": -0.5,
     },
     "transform": [
       1,
@@ -131,8 +131,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 7.841356963626473,
-      "y": 18.95265225253664,
+      "x": -0.19134171618254486,
+      "y": -0.46193976625564337,
     },
     "transform": [
       1,
@@ -146,8 +146,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 8.294117647058824,
-      "y": 19.323529411764707,
+      "x": -0.35355339059327373,
+      "y": -0.3535533905932738,
     },
     "transform": [
       1,
@@ -161,8 +161,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 8.854342519887005,
-      "y": 19.49291121587559,
+      "x": -0.46193976625564337,
+      "y": -0.19134171618254495,
     },
     "transform": [
       1,
@@ -176,8 +176,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 9.436742423674044,
-      "y": 19.43501082064329,
+      "x": -0.5,
+      "y": -6.123233995736766e-17,
     },
     "transform": [
       1,
@@ -191,8 +191,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 9.95265225253664,
-      "y": 19.158643036373526,
+      "x": -0.4619397662556434,
+      "y": 0.19134171618254484,
     },
     "transform": [
       1,
@@ -206,8 +206,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 10.323529411764707,
-      "y": 18.705882352941178,
+      "x": -0.35355339059327384,
+      "y": 0.35355339059327373,
     },
     "transform": [
       1,
@@ -221,8 +221,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 18.530829433738553,
-      "y": 2.2546948117402117,
+      "x": -0.19134171618254517,
+      "y": 0.46193976625564326,
     },
     "transform": [
       1,
@@ -236,8 +236,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": 0.08689266695452384,
-      "y": -0.49239177940896844,
+      "x": -9.184850993605148e-17,
+      "y": 0.5,
     },
     "transform": [
       1,
@@ -251,8 +251,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.10815181968797376,
-      "y": -0.4881630710102722,
+      "x": 0.191341716182545,
+      "y": 0.4619397662556433,
     },
     "transform": [
       1,
@@ -266,8 +266,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.28673117218166416,
-      "y": -0.4096159602595203,
+      "x": 0.3535533905932737,
+      "y": 0.35355339059327384,
     },
     "transform": [
       1,
@@ -281,8 +281,50 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.4216583029352446,
-      "y": -0.26870853273718265,
+      "x": 0.46193976625564326,
+      "y": 0.1913417161825452,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {},
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "closePath",
+  },
+  {
+    "props": {
+      "x": -0.10111795600706745,
+      "y": 0.48966841737338224,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "moveTo",
+  },
+  {
+    "props": {
+      "x": 16.797764087985865,
+      "y": 3.9793368347467646,
     },
     "transform": [
       1,
@@ -296,8 +338,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.49239177940896844,
-      "y": -0.08689266695452387,
+      "x": 17.145188932148365,
+      "y": 2.010596051159276,
     },
     "transform": [
       1,
@@ -311,8 +353,50 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.4881630710102722,
-      "y": 0.10815181968797373,
+      "x": 0.07259446607418153,
+      "y": -0.49470197442036207,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {},
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "closePath",
+  },
+  {
+    "props": {
+      "x": 16.131869612389284,
+      "y": 2.503663793274286,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "moveTo",
+  },
+  {
+    "props": {
+      "x": 7.697804418583928,
+      "y": 17.255495689911427,
     },
     "transform": [
       1,
@@ -326,8 +410,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.4096159602595203,
-      "y": 0.28673117218166416,
+      "x": 10.343718072765553,
+      "y": 18.666649638808295,
     },
     "transform": [
       1,
@@ -341,8 +425,392 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
   },
   {
     "props": {
-      "x": -0.26870853273718265,
-      "y": 0.4216583029352446,
+      "x": 17.89581204851037,
+      "y": 3.444433092538863,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {},
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "closePath",
+  },
+  {
+    "props": {
+      "x": 18,
+      "y": 3,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "moveTo",
+  },
+  {
+    "props": {
+      "x": 17.923879532511286,
+      "y": 2.6173165676349104,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 17.707106781186546,
+      "y": 2.2928932188134525,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 17.38268343236509,
+      "y": 2.076120467488713,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 17.14207179350859,
+      "y": 2.028259836784667,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 16.978494623655916,
+      "y": 2.9551971326164876,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 17.88608579518908,
+      "y": 3.439245757434174,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 17.923879532511286,
+      "y": 3.3826834323650905,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {},
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "closePath",
+  },
+  {
+    "props": {
+      "x": 10.5,
+      "y": 18,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "moveTo",
+  },
+  {
+    "props": {
+      "x": 10.385819298766929,
+      "y": 17.425974851452366,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 10.060660171779821,
+      "y": 16.939339828220177,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 9.574025148547635,
+      "y": 16.61418070123307,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 9,
+      "y": 16.5,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 8.425974851452365,
+      "y": 16.61418070123307,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 7.939339828220179,
+      "y": 16.939339828220177,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 7.61418070123307,
+      "y": 17.425974851452366,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 7.5,
+      "y": 18,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 7.61418070123307,
+      "y": 18.574025148547634,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 7.939339828220179,
+      "y": 19.060660171779823,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 8.425974851452365,
+      "y": 19.38581929876693,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 9,
+      "y": 19.5,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 9.574025148547635,
+      "y": 19.38581929876693,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 10.060660171779821,
+      "y": 19.060660171779823,
+    },
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+    ],
+    "type": "lineTo",
+  },
+  {
+    "props": {
+      "x": 10.385819298766929,
+      "y": 18.574025148547637,
     },
     "transform": [
       1,
@@ -384,8 +852,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.08689266695452384,
-            "y": 0.49239177940896844,
+            "x": 0.5,
+            "y": 0,
           },
           "transform": [
             1,
@@ -399,8 +867,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 15.469170566261447,
-            "y": 3.7453051882597883,
+            "x": 0.46193976625564337,
+            "y": -0.1913417161825449,
           },
           "transform": [
             1,
@@ -414,8 +882,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 7.676470588235294,
-            "y": 17.294117647058822,
+            "x": 0.3535533905932738,
+            "y": -0.35355339059327373,
           },
           "transform": [
             1,
@@ -429,8 +897,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 7.50708878412441,
-            "y": 17.854342519887005,
+            "x": 0.19134171618254492,
+            "y": -0.46193976625564337,
           },
           "transform": [
             1,
@@ -444,8 +912,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 7.564989179356712,
-            "y": 18.436742423674044,
+            "x": 3.061616997868383e-17,
+            "y": -0.5,
           },
           "transform": [
             1,
@@ -459,8 +927,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 7.841356963626473,
-            "y": 18.95265225253664,
+            "x": -0.19134171618254486,
+            "y": -0.46193976625564337,
           },
           "transform": [
             1,
@@ -474,8 +942,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 8.294117647058824,
-            "y": 19.323529411764707,
+            "x": -0.35355339059327373,
+            "y": -0.3535533905932738,
           },
           "transform": [
             1,
@@ -489,8 +957,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 8.854342519887005,
-            "y": 19.49291121587559,
+            "x": -0.46193976625564337,
+            "y": -0.19134171618254495,
           },
           "transform": [
             1,
@@ -504,8 +972,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 9.436742423674044,
-            "y": 19.43501082064329,
+            "x": -0.5,
+            "y": -6.123233995736766e-17,
           },
           "transform": [
             1,
@@ -519,8 +987,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 9.95265225253664,
-            "y": 19.158643036373526,
+            "x": -0.4619397662556434,
+            "y": 0.19134171618254484,
           },
           "transform": [
             1,
@@ -534,8 +1002,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 10.323529411764707,
-            "y": 18.705882352941178,
+            "x": -0.35355339059327384,
+            "y": 0.35355339059327373,
           },
           "transform": [
             1,
@@ -549,8 +1017,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 18.530829433738553,
-            "y": 2.2546948117402117,
+            "x": -0.19134171618254517,
+            "y": 0.46193976625564326,
           },
           "transform": [
             1,
@@ -564,8 +1032,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": 0.08689266695452384,
-            "y": -0.49239177940896844,
+            "x": -9.184850993605148e-17,
+            "y": 0.5,
           },
           "transform": [
             1,
@@ -579,8 +1047,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.10815181968797376,
-            "y": -0.4881630710102722,
+            "x": 0.191341716182545,
+            "y": 0.4619397662556433,
           },
           "transform": [
             1,
@@ -594,8 +1062,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.28673117218166416,
-            "y": -0.4096159602595203,
+            "x": 0.3535533905932737,
+            "y": 0.35355339059327384,
           },
           "transform": [
             1,
@@ -609,8 +1077,50 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.4216583029352446,
-            "y": -0.26870853273718265,
+            "x": 0.46193976625564326,
+            "y": 0.1913417161825452,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {},
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "closePath",
+        },
+        {
+          "props": {
+            "x": -0.10111795600706745,
+            "y": 0.48966841737338224,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "moveTo",
+        },
+        {
+          "props": {
+            "x": 16.797764087985865,
+            "y": 3.9793368347467646,
           },
           "transform": [
             1,
@@ -624,8 +1134,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.49239177940896844,
-            "y": -0.08689266695452387,
+            "x": 17.145188932148365,
+            "y": 2.010596051159276,
           },
           "transform": [
             1,
@@ -639,8 +1149,50 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.4881630710102722,
-            "y": 0.10815181968797373,
+            "x": 0.07259446607418153,
+            "y": -0.49470197442036207,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {},
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "closePath",
+        },
+        {
+          "props": {
+            "x": 16.131869612389284,
+            "y": 2.503663793274286,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "moveTo",
+        },
+        {
+          "props": {
+            "x": 7.697804418583928,
+            "y": 17.255495689911427,
           },
           "transform": [
             1,
@@ -654,8 +1206,8 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.4096159602595203,
-            "y": 0.28673117218166416,
+            "x": 10.343718072765553,
+            "y": 18.666649638808295,
           },
           "transform": [
             1,
@@ -669,8 +1221,392 @@ exports[`renderUserStroke fills an outline around the points if the stroke has a
         },
         {
           "props": {
-            "x": -0.26870853273718265,
-            "y": 0.4216583029352446,
+            "x": 17.89581204851037,
+            "y": 3.444433092538863,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {},
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "closePath",
+        },
+        {
+          "props": {
+            "x": 18,
+            "y": 3,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "moveTo",
+        },
+        {
+          "props": {
+            "x": 17.923879532511286,
+            "y": 2.6173165676349104,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 17.707106781186546,
+            "y": 2.2928932188134525,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 17.38268343236509,
+            "y": 2.076120467488713,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 17.14207179350859,
+            "y": 2.028259836784667,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 16.978494623655916,
+            "y": 2.9551971326164876,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 17.88608579518908,
+            "y": 3.439245757434174,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 17.923879532511286,
+            "y": 3.3826834323650905,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {},
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "closePath",
+        },
+        {
+          "props": {
+            "x": 10.5,
+            "y": 18,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "moveTo",
+        },
+        {
+          "props": {
+            "x": 10.385819298766929,
+            "y": 17.425974851452366,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 10.060660171779821,
+            "y": 16.939339828220177,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 9.574025148547635,
+            "y": 16.61418070123307,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 9,
+            "y": 16.5,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 8.425974851452365,
+            "y": 16.61418070123307,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 7.939339828220179,
+            "y": 16.939339828220177,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 7.61418070123307,
+            "y": 17.425974851452366,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 7.5,
+            "y": 18,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 7.61418070123307,
+            "y": 18.574025148547634,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 7.939339828220179,
+            "y": 19.060660171779823,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 8.425974851452365,
+            "y": 19.38581929876693,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 9,
+            "y": 19.5,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 9.574025148547635,
+            "y": 19.38581929876693,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 10.060660171779821,
+            "y": 19.060660171779823,
+          },
+          "transform": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+          ],
+          "type": "lineTo",
+        },
+        {
+          "props": {
+            "x": 10.385819298766929,
+            "y": 18.574025148547637,
           },
           "transform": [
             1,

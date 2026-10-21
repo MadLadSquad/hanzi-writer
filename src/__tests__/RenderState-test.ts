@@ -159,5 +159,21 @@ describe('RenderState', () => {
       expect(isResolved).toBe(true);
       expect(resolvedVal).toEqual({ canceled: true });
     });
+
+    it('does not cancel scopes that merely share a numeric prefix', async () => {
+      const renderState = new RenderState(char, opts);
+      let stroke10Result;
+      renderState
+        .run([new Mutation('userStrokes.10.opacity', 0, { duration: 50 })])
+        .then((res) => {
+          stroke10Result = res;
+        });
+
+      await Promise.resolve();
+      renderState.cancelMutations(['userStrokes.1']);
+      expect(stroke10Result).toBeUndefined();
+      renderState.cancelAll();
+      await Promise.resolve();
+    });
   });
 });

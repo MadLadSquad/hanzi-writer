@@ -18,6 +18,15 @@ export type CharDataLoaderFn = (
 
 export type Point = { x: number; y: number };
 
+/** A single position reported by a pointer while drawing */
+export type PointerSample = {
+  point: Point;
+  /** Stylus pressure between 0 and 1, if the device reports it */
+  pressure?: number;
+  /** When the pointer was at this position, in ms on the same clock as `performance.now()` */
+  time?: number;
+};
+
 export type ColorObject = { r: number; g: number; b: number; a: number };
 
 export type ColorOptions = {
@@ -59,7 +68,20 @@ export type StrokeData = {
   strokesRemaining: number;
 };
 
-export type QuizOptions = {
+export type DrawingWidthOptions = {
+  /** Default: 1. How strongly stylus pressure affects the width of lines drawn by users. 0 (or less) disables pressure sensitivity. Only used if `variableDrawingWidth` is `true`. */
+  drawingPressureSensitivity: number;
+  /** Default: 0.5. How strongly drawing speed affects the width of lines drawn by users - the faster the stroke, the thinner the line. 0 (or less) disables speed sensitivity. Only used if `variableDrawingWidth` is `true`. */
+  drawingSpeedSensitivity: number;
+  /** Default: 0.5. The thinnest a drawn line may get, as a multiple of `drawingWidth`. Only used if `variableDrawingWidth` is `true`. */
+  minDrawingWidthScale: number;
+  /** Default: 1.5. The thickest a drawn line may get, as a multiple of `drawingWidth`. Only used if `variableDrawingWidth` is `true`. */
+  maxDrawingWidthScale: number;
+};
+
+export type QuizOptions = DrawingWidthOptions & {
+  /** Default: false. If true, lines drawn by users during quizzing vary in width based on stylus pressure and drawing speed rather than always being `drawingWidth` wide. */
+  variableDrawingWidth: boolean;
   /** Default: 1. This can be set to make stroke grading more or less lenient. The closer this is to 0 the more strictly the quiz is graded. */
   leniency: number;
   /** Highlights the correct stroke after a set number of incorrect attempts. Setting `false` disables entirely. Default: 3 */
@@ -86,18 +108,7 @@ export type LoadingManagerOptions = {
   onLoadCharDataError?: null | ((error?: Error | string) => void);
 };
 
-export type DrawingWidthOptions = {
-  /** Default: 1. How strongly stylus pressure affects the width of lines drawn by users. 0 disables pressure sensitivity. Only used if `variableDrawingWidth` is `true`. */
-  drawingPressureSensitivity: number;
-  /** Default: 0.5. How strongly drawing speed affects the width of lines drawn by users - the faster the stroke, the thinner the line. 0 disables speed sensitivity. Only used if `variableDrawingWidth` is `true`. */
-  drawingSpeedSensitivity: number;
-  /** Default: 0.5. The thinnest a drawn line may get, as a multiple of `drawingWidth`. Only used if `variableDrawingWidth` is `true`. */
-  minDrawingWidthScale: number;
-  /** Default: 1.5. The thickest a drawn line may get, as a multiple of `drawingWidth`. Only used if `variableDrawingWidth` is `true`. */
-  maxDrawingWidthScale: number;
-};
-
-type BaseHanziWriterOptions = DrawingWidthOptions & {
+type BaseHanziWriterOptions = {
   showOutline: boolean;
   showCharacter: boolean;
   /** Default: svg */
@@ -120,8 +131,6 @@ type BaseHanziWriterOptions = DrawingWidthOptions & {
   drawingFadeDuration: number;
   /** Default: 4 */
   drawingWidth: number;
-  /** Default: false. If true, lines drawn by users during quizzing vary in width based on stylus pressure and drawing speed rather than always being `drawingWidth` wide. */
-  variableDrawingWidth: boolean;
   /** Default: 2 */
   strokeWidth: number;
   /** Default: 2 */

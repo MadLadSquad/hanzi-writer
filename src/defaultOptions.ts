@@ -42,16 +42,16 @@ const defaultOptions: HanziWriterOptions = {
   acceptBackwardsStrokes: false,
   quizStartStrokeNum: 0,
   averageDistanceThreshold: 350,
-
-  // undocumented obscure options
-
-  drawingFadeDuration: 300,
-  drawingWidth: 4,
   variableDrawingWidth: false,
   drawingPressureSensitivity: 1,
   drawingSpeedSensitivity: 0.5,
   minDrawingWidthScale: 0.5,
   maxDrawingWidthScale: 1.5,
+
+  // undocumented obscure options
+
+  drawingFadeDuration: 300,
+  drawingWidth: 4,
   strokeWidth: 2,
   outlineWidth: 2,
   rendererOverride: {},

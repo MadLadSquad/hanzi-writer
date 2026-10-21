@@ -254,6 +254,7 @@ describe('Quiz', () => {
       await resolvePromises();
 
       quiz.startUserStroke({ x: 10, y: 20 }, 0.8);
+      clock.tick(16);
       quiz.continueUserStroke({ x: 30, y: 40 }, 0.2);
       await resolvePromises();
 
@@ -318,8 +319,9 @@ describe('Quiz', () => {
       clock.tick(1000);
       await resolvePromises();
 
-      // should fade
-      expect(renderState.state.userStrokes![currentStrokeId]?.opacity).toBe(0);
+      // should fade out, then be removed
+      expect(renderState.state.userStrokes![currentStrokeId]).toBe(null);
+      expect(quiz._userStrokesIds).toEqual([]);
     });
   });
 
@@ -384,6 +386,98 @@ describe('Quiz', () => {
       expect(quiz._userStroke).toBe(undefined);
       expect(renderState.state.userStrokes).toBe(null);
     });
+
+    it('records when each point was drawn, if given', async () => {
+      const quiz = new Quiz(
+        char,
+        createRenderState(),
+        new Positioner({ padding: 20, width: 200, height: 200 }),
+      );
+      quiz.startQuiz(Object.assign({}, opts));
+      await resolvePromises();
+
+      quiz.startUserStroke({ x: 10, y: 20 }, undefined, 1000);
+      quiz.continueUserStroke({ x: 100, y: 200 }, undefined, 1016);
+      expect(quiz._userStroke!.times).toEqual([1000, 1016]);
+    });
+  });
+
+  describe('continueUserStrokeSamples', () => {
+    it('adds every sample to the current stroke, but only renders once', async () => {
+      const renderState = createRenderState();
+      const quiz = new Quiz(
+        char,
+        renderState,
+        new Positioner({ padding: 20, width: 200, height: 200 }),
+      );
+      quiz.startQuiz(Object.assign({}, opts, { variableDrawingWidth: true }));
+      await resolvePromises();
+
+      quiz.startUserStroke({ x: 10, y: 20 }, 0.5, 1000);
+      const runSpy = jest.spyOn(renderState, 'run');
+      quiz.continueUserStrokeSamples([
+        { point: { x: 50, y: 60 }, pressure: 0.6, time: 1004 },
+        { point: { x: 100, y: 200 }, pressure: 0.7, time: 1008 },
+      ]);
+
+      expect(runSpy).toHaveBeenCalledTimes(1);
+      const strokeId = quiz._userStroke!.id;
+      expect(quiz._userStroke!.times).toEqual([1000, 1004, 1008]);
+      expect(renderState.state.userStrokes![strokeId]!.points).toEqual([
+        { x: 15, y: 25 },
+        { x: 55, y: 65 },
+        { x: 105, y: 205 },
+      ]);
+      expect(renderState.state.userStrokes![strokeId]!.widthScales).toHaveLength(3);
+    });
+
+    it('does nothing if there are no samples', async () => {
+      const renderState = createRenderState();
+      const quiz = new Quiz(
+        char,
+        renderState,
+        new Positioner({ padding: 20, width: 200, height: 200 }),
+      );
+      quiz.startQuiz(Object.assign({}, opts));
+      await resolvePromises();
+
+      quiz.startUserStroke({ x: 10, y: 20 });
+      const runSpy = jest.spyOn(renderState, 'run');
+      quiz.continueUserStrokeSamples([]);
+      expect(runSpy).not.toHaveBeenCalled();
+      expect(quiz._userStroke!.points).toHaveLength(1);
+    });
+  });
+
+  describe('cancelUserStroke', () => {
+    it('fades out and discards the in-progress stroke without grading it', async () => {
+      const renderState = createRenderState();
+      const quiz = new Quiz(
+        char,
+        renderState,
+        new Positioner({ padding: 20, width: 200, height: 200 }),
+      );
+      const onCorrectStroke = jest.fn();
+      const onMistake = jest.fn();
+      quiz.startQuiz(Object.assign({}, opts, { onCorrectStroke, onMistake }));
+      clock.tick(1000);
+      await resolvePromises();
+
+      quiz.startUserStroke({ x: 10, y: 20 });
+      quiz.continueUserStroke({ x: 100, y: 200 });
+      const strokeId = quiz._userStroke!.id;
+
+      quiz.cancelUserStroke();
+      clock.tick(1000);
+      await resolvePromises();
+
+      expect(quiz._userStroke).toBeUndefined();
+      expect(quiz._currentStrokeIndex).toBe(0);
+      expect(quiz._totalMistakes).toBe(0);
+      expect(onCorrectStroke).not.toHaveBeenCalled();
+      expect(onMistake).not.toHaveBeenCalled();
+      expect(renderState.state.userStrokes![strokeId]).toBe(null);
+    });
   });
 
   describe('endUserStroke', () => {
@@ -442,7 +536,7 @@ describe('Quiz', () => {
       expect(renderState.state.character.main.strokes[0].opacity).toBe(1);
       expect(renderState.state.character.main.strokes[1].opacity).toBe(0);
       // should fade
-      expect(renderState.state.userStrokes![currentStrokeId]?.opacity).toBe(0);
+      expect(renderState.state.userStrokes![currentStrokeId]).toBe(null);
     });
 
     it('accepts backwards stroke when allowed', async () => {
@@ -507,7 +601,7 @@ describe('Quiz', () => {
       expect(renderState.state.character.main.strokes[0].opacity).toBe(1);
       expect(renderState.state.character.main.strokes[1].opacity).toBe(0);
       // should fade
-      expect(renderState.state.userStrokes![currentStrokeId]?.opacity).toBe(0);
+      expect(renderState.state.userStrokes![currentStrokeId]).toBe(null);
     });
 
     it('notes backwards stroke when checking', async () => {
@@ -572,7 +666,7 @@ describe('Quiz', () => {
       expect(renderState.state.character.main.strokes[0].opacity).toBe(0);
       expect(renderState.state.character.main.strokes[1].opacity).toBe(0);
       // should fade
-      expect(renderState.state.userStrokes![currentStrokeId]?.opacity).toBe(0);
+      expect(renderState.state.userStrokes![currentStrokeId]).toBe(null);
     });
 
     it('ignores single point strokes', async () => {
@@ -612,7 +706,7 @@ describe('Quiz', () => {
       expect(renderState.state.character.main.strokes[0].opacity).toBe(0);
       expect(renderState.state.character.main.strokes[1].opacity).toBe(0);
       // should fade
-      expect(renderState.state.userStrokes![currentStrokeId]?.opacity).toBe(0);
+      expect(renderState.state.userStrokes![currentStrokeId]).toBe(null);
     });
 
     it('stays on the stroke if it was incorrect', async () => {
@@ -670,7 +764,7 @@ describe('Quiz', () => {
       expect(renderState.state.character.main.strokes[0].opacity).toBe(0);
       expect(renderState.state.character.main.strokes[1].opacity).toBe(0);
       // should fade
-      expect(renderState.state.userStrokes![currentStrokeId]?.opacity).toBe(0);
+      expect(renderState.state.userStrokes![currentStrokeId]).toBe(null);
     });
 
     it('highlights the stroke if the number of mistakes exceeds showHintAfterMisses', async () => {

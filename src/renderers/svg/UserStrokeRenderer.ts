@@ -1,5 +1,9 @@
 import * as svg from './svgUtils';
-import { getPathString, getVariableWidthOutline } from '../../geometry';
+import {
+  getOutlinePathString,
+  getPathString,
+  getVariableWidthOutline,
+} from '../../geometry';
 import { ColorObject, Point } from '../../typings/types';
 import { getStrokeWidths } from '../../userStrokeWidth';
 import SVGRenderTarget from './RenderTarget';
@@ -22,7 +26,7 @@ const getUserStrokePathString = (props: UserStrokeProps) => {
   }
   // a stroked path is the same width from end to end, so a variable-width line has to be
   // drawn as a filled outline around the points instead
-  return getPathString(getVariableWidthOutline(props.points, widths), true);
+  return getOutlinePathString(getVariableWidthOutline(props.points, widths));
 };
 
 export default class UserStrokeRenderer {
