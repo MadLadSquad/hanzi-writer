@@ -46,8 +46,10 @@ Manual testing: `demo/index.html` loads `../dist/hanzi-writer.js`, so run `yarn 
 
 ## Constraints
 
-- Output targets ES2022 with no transpiling for old browsers (`ts({ browserslist: false })`); quiz drawing relies on Pointer Events. Don't add polyfills or legacy-browser workarounds.
+- Output targets ES2022 with no transpiling for old browsers (the `target` in `tsconfig.json`, compiled by `@rollup/plugin-typescript`; `rollup-plugin-dts` bundles the `.d.ts`); quiz drawing relies on Pointer Events. Don't add polyfills or legacy-browser workarounds.
 - The library has no runtime dependencies; keep it that way.
+- `typescript` stays on 6.x until `typescript-eslint` supports TypeScript 7 (it needs the classic JS compiler API, which TS 7 does not ship). The source already typechecks under TS 7.
+- Jest runs on Babel 8 through the direct `babel-jest` dev dependency (`jest.transform` in `package.json`). Jest's own nested copy uses Babel 7, so don't remove either.
 
 ## graphify
 
